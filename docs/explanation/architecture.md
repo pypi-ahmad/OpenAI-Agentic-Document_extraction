@@ -1,0 +1,172 @@
+# Architecture and extraction walkthrough
+
+The application separates probabilistic reading from deterministic validation and
+presentation. OpenAI models return semantic page data; local code validates, routes,
+renders, annotates, accounts for, and packages that data.
+
+```mermaid
+flowchart LR
+    U[Authorized uploads] --> B[Validated BatchDocument tuple]
+    B --> R[Selected RenderedPage images]
+    R --> T[Terra structured extraction]
+    T --> Q[Validation and quality evidence]
+    Q -->|accepted| D[Deterministic renderer]
+    Q -->|sub-threshold| I[Independent Terra crop]
+    I -->|agreement| D
+    I -->|field disagreement| S[Sol field-resolution crop]
+    I -->|uncertain or conflict| H[needs_review]
+    S -->|resolved| D
+    S -->|unresolved| H
+    H --> D
+    D --> O[JSON, Markdown, annotated PDF, ZIP and manifest]
+```
+
+## Component boundaries
+
+| Area | Modules | Owned responsibility |
+|---|---|---|
+| UI/session | `streamlit_app.py`, `session.py` | Authorization, uploads, page controls, progress, reset, previews, downloads |
+| Batch scheduling | `batch.py` | File/page/byte/pixel limits, four-document pool, failure isolation |
+| Input imaging | `inputs.py`, `raster.py` | Filename/content checks, page selection, bounded raster images and crops |
+| Model access | `openai_client.py`, `prompts/*.md` | Responses API calls, structured parsing, request metadata, staged routing |
+| Quality evidence | `quality.py`, `consensus.py`, `verification.py` | Calibrated signals, peer evidence, field comparison, non-correcting format checks |
+| Output contract | `models.py`, `rendering.py`, `outputs.py` | Strict schemas, deterministic Markdown/ranges/IDs, annotations, archives |
+| Measurement | `corpus.py`, `profile.py`, `calibration.py`, `evaluation.py` | Exact-stem mapping, profile discovery, calibration, GroundTruth metrics |
+
+## End-to-end walkthrough
+
+### 1. Uploads become validated document inputs
+
+`streamlit_app.py` renders the authorization checkbox, multi-file uploader, and per-file
+inclusive start/end page controls. Each `UploadedFile` becomes a `DocumentInput`;
+`DocumentInput` in `inputs.py` rejects unsafe names, unsupported suffixes, empty content, and
+files over 200 MB.
+
+```text
+UploadedFile → DocumentInput(filename, data) → _UploadItem(item_id, source, page_count)
+```
+
+Branches:
+
+- Invalid bytes or filenames produce a per-file UI error.
+- Reordered or changed uploads clear only ADE-owned page/result state.
+- Extraction remains disabled until authorization is acknowledged and page ranges are valid.
+
+### 2. Page ranges become a bounded batch
+
+On submit, the UI converts each start/end pair through `parse_page_range` and creates a tuple of
+`BatchDocument` values. `extract_documents` in `batch.py` rejects empty batches, more than 20
+files, duplicate item IDs, more than 500 MB, more than 100 selected pages, invalid ordering, and
+excess estimated raster pixels.
+
+```text
+_UploadItem + (start, end) → BatchDocument(item_id, DocumentInput, pages)
+```
+
+### 3. Selected pages are rasterized and scheduled
+
+`rasterize_document` in `raster.py` decodes only selected pages and yields normalized PNG-backed
+`RenderedPage` records. The pool in `batch.py` admits at most four documents and assigns up to
+two primary page workers to each document. Those potential workers share the process-wide
+Responses semaphore in `openai_client.py`, which admits at most four API calls. The 20-file value
+is therefore an upload limit, not API concurrency.
+
+```text
+DocumentInput + pages → tuple[RenderedPage(source_page, png_bytes, width, height), ...]
+```
+
+### 4. Terra produces the primary semantic page
+
+`extract_document` in `pipeline.py` detects the staged extractor and runs `extract_primary`.
+`OpenAIPageExtractor` submits the page image to the Responses API with
+`AuditedSemanticPageExtraction` as its structured format and `store=False`. Local code rejects
+missing parsed output, empty extraction on a visibly nonblank page, invalid audits, and invalid
+rendered ranges.
+
+```text
+RenderedPage → AuditedSemanticPageExtraction(children, audits)
+             → PageExtraction(markdown, grounded children)
+```
+
+Failure branch: a page-level provider, runtime, or validation failure becomes a failed
+`PageOutcome` and `PageRunRecord`; it does not discard successful sibling pages.
+
+### 5. Low-quality segments follow the repair branches
+
+`OpenAIPageExtractor.finalize` measures every primary segment and records its score, reasons, and
+attempts. For a sub-threshold segment:
+
+1. An independent Terra request sees the original crop, not the primary transcription.
+2. Document-local peer evidence may accompany that crop when a clearer stable repeated region
+   exists; `consensus.py` owns peer comparison.
+3. Field-level agreement preserves the candidate; disagreements send only disputed crop/value
+   pairs to Sol.
+4. Unresolved fields, structural conflicts, failed calls, and exhausted repair budget remain
+   `needs_review` rather than receiving fabricated content.
+
+```text
+segment + audit → SegmentQuality
+crop → SemanticSegmentPatch
+two semantic elements → Comparison
+disputed fields → SemanticFieldResolutionBatch
+result → SegmentRecord(status, score, reasons, attempts)
+```
+
+### 6. Local code creates the canonical artifacts
+
+`render_semantic_page` in `rendering.py` converts semantic lines, styles, checkboxes, figures,
+and table cells into deterministic Markdown and local ranges. `render_document` restores
+requested page order, rebases ranges, assigns IDs, records failed pages, and constructs a
+validated `GroundTruthDocument`. The pipeline serializes and validates that document again
+before returning it.
+
+```text
+list[PageOutcome] → GroundTruthDocument(markdown, metadata, structure) → JSON text
+```
+
+### 7. Review and download artifacts are assembled
+
+The pipeline overlays trusted element boxes on the exact selected page images, records omitted
+or uncertain annotations, and adds provenance, prompt hashes, token usage, model-specific cost,
+and review state to the manifest. `outputs.py` builds the annotated PDF and exact
+individual/batch ZIP contents. The UI previews Markdown, JSON, and PDF and exposes independent
+downloads.
+
+## Ordering and concurrency facts
+
+- Upload limit: 20 files (`MAX_BATCH_FILES` in `batch.py`).
+- Active document workers: at most 4 (`MAX_FILE_WORKERS` in `batch.py`).
+- Primary page workers per document in the Streamlit batch path: at most 2
+  (`MAX_PAGE_WORKERS_PER_DOCUMENT` in `batch.py`).
+- Maximum concurrent API calls across the process: 4 (`MAX_CONCURRENT_RESPONSES` in
+  `openai_client.py`).
+- Completion events may arrive out of order; `pipeline.py` rebuilds records using the requested
+  page tuple, and `batch.py` rebuilds files using upload order.
+
+The standalone `extract_document` function defaults to three page workers, and the evaluation
+CLI explicitly uses three. Those are separate executable paths from Streamlit batch processing.
+
+## Side effects and trust boundaries
+
+- **External network:** selected images and repair crops are sent only through the configured
+  official OpenAI Responses endpoint. Requests specify `store=False`.
+- **Memory:** upload bytes, rasters, semantic results, PDFs, and ZIPs live in process/session
+  memory during the UI workflow.
+- **Filesystem:** the UI does not automatically persist document artifacts. Browser downloads
+  write only where the operator chooses. Profiling and calibration write their requested
+  profile/report files; evaluation creates a new run directory and writes generated artifacts.
+- **Database/queue:** none exists in this repository.
+- **Credentials:** read from `OPENAI_API_KEY` or Streamlit secrets and excluded from artifacts.
+- **Reset:** `reset_session_state` removes only known ADE session keys; it performs no filesystem
+  deletion.
+
+## Verification checkpoints
+
+1. **Input boundary:** invalid name/type/size/page range fails before a model call.
+2. **Concurrency:** 20 uploads and the nested worker pools still produce no more than four
+   simultaneous Responses API calls.
+3. **Structured output:** every successful page validates before document assembly.
+4. **Partial failure:** one failed page remains visible while successful pages are downloadable.
+5. **Review state:** unresolved segments appear in the manifest and annotation limitations.
+6. **Output identity:** manifest hashes match generated Markdown, JSON, and annotated PDF.
+7. **Evaluation:** measured accuracy comes only from mapped source/GT pairs and a credentialed run.

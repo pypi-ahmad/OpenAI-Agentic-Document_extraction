@@ -1,0 +1,46 @@
+[build-system]
+requires = ["uv_build>=0.12.7,<0.13.0"]
+build-backend = "uv_build"
+
+[project]
+name = "ade-app"
+version = "0.1.0"
+description = "Local Streamlit document extraction using OpenAI GPT-5.6 Terra and Sol"
+requires-python = ">=3.14"
+dependencies = [
+  "openai>=3.6.0",
+  "pillow>=12.3.0",
+  "pydantic>=2.13.5",
+  "pymupdf>=1.28.2",
+  "streamlit[pdf]>=1.62.0",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=9.1.1",
+  "pytest-cov>=7.1.0",
+  "ruff>=0.16.5",
+  "ty>=0.0.76",
+]
+
+[project.scripts]
+ade-evaluate = "ade_app.evaluation:main"
+ade-calibrate-quality = "ade_app.calibration:main"
+ade-profile = "ade_app.profile:main"
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.ruff.format]
+line-ending = "lf"
+
+[tool.ty.environment]
+python-version = "3.14"

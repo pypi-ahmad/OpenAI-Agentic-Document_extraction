@@ -1,0 +1,28 @@
+[server]
+port = 9674
+address = "127.0.0.1"
+enableXsrfProtection = true
+enableCORS = true
+enableWebsocketCompression = false
+headless = true
+maxUploadSize = 200
+maxMessageSize = 200
+
+[theme]
+base = "dark"
+primaryColor = "#C2185B"
+backgroundColor = "#121212"
+secondaryBackgroundColor = "#1B1B3A"
+textColor = "#F5F5F5"
+linkColor = "#22D3EE"
+codeBackgroundColor = "#181535"
+borderColor = "#343164"
+showWidgetBorder = true
+showSidebarBorder = true
+
+[theme.sidebar]
+backgroundColor = "#1B1B3A"
+secondaryBackgroundColor = "#262653"
+textColor = "#F5F5F5"
+primaryColor = "#C2185B"
+borderColor = "#343164"
