@@ -25,13 +25,16 @@ Selected page images and routed review crops are sent to OpenAI. Results remain 
 state associated with the current Streamlit session until Reset, the upload selection changes, or
 the session ends; downloaded files are written only when you choose to save them.
 
-## Quick start
+## Setup and cloning
+
+Repository: <https://github.com/pypi-ahmad/OpenAI-Agentic-Document_extraction>
 
 Requirements: Windows 11, Python 3.14+, [`uv`](https://docs.astral.sh/uv/), and an OpenAI API
 key with access to the configured models.
 
 ```powershell
-cd D:\AI\Github\OpenAI-Agentic-Document_extraction
+git clone https://github.com/pypi-ahmad/OpenAI-Agentic-Document_extraction.git
+cd OpenAI-Agentic-Document_extraction
 $env:OPENAI_API_KEY = "your-key-for-this-shell"
 uv sync --frozen
 .\launch.cmd
