@@ -1,4 +1,11 @@
-"""Document input validation and inclusive page-range parsing."""
+"""Document input validation and inclusive page-range parsing.
+
+This is the trust boundary for uploaded bytes and filenames: DocumentInput
+rejects unsafe names, unsupported suffixes, empty content, and files over
+200 MB before anything downstream treats the data as a document. Must NOT
+decode, sniff, or open the file contents itself — that happens next in
+ade_app.raster, which is the module to open next.
+"""
 
 from __future__ import annotations
 
@@ -17,6 +24,9 @@ class DocumentInput:
     data: bytes
 
     def __post_init__(self) -> None:
+        # filename/data originate from an untrusted upload; reject anything
+        # that isn't a plain, safe, in-size-limit name before construction
+        # succeeds, so no later code path can hold an unvalidated instance.
         if not self.filename or Path(self.filename).name != self.filename:
             raise ValueError("filename must be a plain file name")
         if (

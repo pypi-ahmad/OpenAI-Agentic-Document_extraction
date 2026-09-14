@@ -1,4 +1,11 @@
-"""Small, testable Streamlit session-state reset contract."""
+"""Streamlit session-state reset contract.
+
+Responsible for clearing only the ADE-owned keys listed below from Streamlit
+session state. Must NOT touch the filesystem or any other session-state key
+(Streamlit's own widget bookkeeping included). See streamlit_app.py for where
+these are called and src/ade_app/batch.py for what a cleared "batch_run"
+actually holds.
+"""
 
 from __future__ import annotations
 
@@ -15,6 +22,7 @@ SESSION_KEYS = (
     "result_item_id",
     "authorization_acknowledged",
     "evaluation_report_upload",
+    "extraction_cache",
 )
 SESSION_PREFIXES = ("start_page_", "end_page_")
 
@@ -23,9 +31,7 @@ def reset_session_state(state: Any) -> None:
     """Clear only ADE-owned keys; never access the filesystem."""
 
     for key in tuple(state):
-        if key in SESSION_KEYS or any(
-            str(key).startswith(prefix) for prefix in SESSION_PREFIXES
-        ):
+        if key in SESSION_KEYS or any(str(key).startswith(prefix) for prefix in SESSION_PREFIXES):
             state.pop(key, None)
 
 

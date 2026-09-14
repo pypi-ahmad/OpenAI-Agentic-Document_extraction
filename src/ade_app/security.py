@@ -1,4 +1,10 @@
-"""Small security boundary helpers shared by the local UI."""
+"""Security boundary helpers shared by the local UI.
+
+Responsible for verifying loopback binding addresses and sanitizing error messages
+exposed to the user interface to prevent filesystem/credential leakage.
+Must NOT handle credentials, log sensitive information, or expose internal exception traces.
+Next: streamlit_app.py for UI authorization, session management, and rendering.
+"""
 
 from __future__ import annotations
 

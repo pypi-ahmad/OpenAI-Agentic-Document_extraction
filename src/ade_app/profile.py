@@ -1,4 +1,10 @@
-"""Discover and verify the local GroundTruth output contract."""
+"""GroundTruth schema contract discovery and corpus profile verification.
+
+Responsible for inspecting paired GroundTruth artifacts (*.parse.json and *.parse.md),
+verifying structural key ordering and element counts, and emitting content-free profile summaries.
+Must NOT store extracted text or document values in output profiles.
+Next: ade_app.models for schema definitions, or ade_app.calibration for routing calibration.
+"""
 
 from __future__ import annotations
 

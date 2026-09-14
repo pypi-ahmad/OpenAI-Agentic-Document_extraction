@@ -1,4 +1,11 @@
-"""Deterministic field comparison and document-local peer evidence."""
+"""Deterministic field comparison and document-local peer evidence.
+
+Responsible for diffing primary and independent verification extractions,
+detecting field disagreements (line and table cell values), and compiling peer
+evidence for consensus gates.
+Must NOT invoke models or execute network calls.
+Next: ade_app.openai_client for Sol dispute resolution, or ade_app.fields for field linking.
+"""
 
 from __future__ import annotations
 
@@ -113,8 +120,18 @@ def apply_resolutions(
         if resolution.kind != disagreement.kind:
             unresolved.append(field_id)
             continue
-        if not _replace_field(result, field_id, resolution):
+        candidate = result.model_copy(deep=True)
+        if not _replace_field(candidate, field_id, resolution):
             unresolved.append(field_id)
+            continue
+        proposed, _ = _fields(candidate)
+        if _field_key(proposed[field_id]) not in (
+            _field_key(disagreement.primary),
+            _field_key(disagreement.independent),
+        ):
+            unresolved.append(field_id)
+            continue
+        result = candidate
     unresolved.extend(sorted(resolution_by_id.keys() - expected.keys()))
     return result, tuple(unresolved)
 
@@ -233,7 +250,7 @@ def _replace_field(element: SemanticElement, field_id: str, resolution: FieldRes
     try:
         index = int(field_id.removeprefix("line-"))
         old = element.lines[index]
-    except ValueError, IndexError:
+    except (ValueError, IndexError):
         return False
     element.lines[index] = SemanticLine(box=old.box, **resolution.line.model_dump())
     return True

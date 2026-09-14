@@ -1,4 +1,13 @@
-"""Deterministic segment signals and calibrated routing scores."""
+"""Deterministic segment signals and calibrated routing scores.
+
+Turns a segment's audit/extraction into a fixed feature vector and scores it
+against a calibrated logistic profile loaded from profiles/segment-quality-*.json.
+This module only computes the score and reasons — it must not decide routing;
+every segment with non-empty reasons (i.e. "uncalibrated") still requires
+independent verification by the caller regardless of its raw score. Next:
+openai_client.py, which turns this score into the luna/terra/sol routing
+decision.
+"""
 
 from __future__ import annotations
 
@@ -10,10 +19,14 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from ade_app.constants import PRIMARY_MODEL
+from ade_app.constants import VERIFICATION_MODEL
 from ade_app.models import DraftElement, DraftTable, PageExtraction, SegmentAudit
 from ade_app.verification import verify_sensitive_values
 
+# Positional contract: segment_features() must emit values in this exact
+# order — QualityProfile.score() zips them against coefficients by position,
+# and validate_shape() only guards that a loaded profile's declared
+# feature_names equal this tuple, not that anyone emits values in this order.
 FEATURE_NAMES = (
     "schema_validity",
     "text_completeness",
@@ -37,15 +50,14 @@ class QualityProfile(BaseModel):
     groundtruth_hashes: dict[str, str]
     validation: dict[str, float | int]
     raw_decision_boundary: float = Field(default=90.0, ge=0, le=100)
+    routing_fingerprint: str = ""
     model_id: str = ""
     reasoning_effort: str = ""
 
     @property
     def routing_mode(self) -> str:
         return (
-            "repair_all"
-            if int(self.validation.get("accepted_count", 0)) == 0
-            else "quality_gated"
+            "repair_all" if int(self.validation.get("accepted_count", 0)) == 0 else "quality_gated"
         )
 
     @model_validator(mode="after")
@@ -61,6 +73,7 @@ class QualityProfile(BaseModel):
             raise ValueError("quality feature count is incompatible")
         products = zip(self.coefficients, features, strict=True)
         value = self.intercept + sum(coefficient * feature for coefficient, feature in products)
+        # Numerically stable logistic: avoids exp() overflow for large |value|.
         if value >= 0:
             probability = 1 / (1 + math.exp(-value))
         else:
@@ -69,6 +82,11 @@ class QualityProfile(BaseModel):
         raw = probability * 100
         if self.profile_version < 2:
             return round(raw, 2)
+        # v2+ remaps the raw probability so raw_decision_boundary (the
+        # cross-validated accept/reject cutoff) lands exactly on `threshold`
+        # in output space, without changing relative order, so a caller can
+        # compare the mapped score against one fixed threshold regardless of
+        # where calibration actually placed the boundary.
         boundary = self.raw_decision_boundary
         if boundary >= 100:
             mapped = raw * 0.9
@@ -79,15 +97,21 @@ class QualityProfile(BaseModel):
         return round(min(100.0, mapped), 2)
 
 
-def load_quality_profile(path: str | Path) -> QualityProfile:
+def load_quality_profile(
+    path: str | Path,
+    *,
+    expected_model: tuple[str, str] = VERIFICATION_MODEL,
+) -> QualityProfile:
+    """Load a calibration file, failing closed if it is missing, stale, or for the wrong model."""
+
     profile_path = Path(path)
     if not profile_path.is_file():
         raise RuntimeError(f"Calibrated quality profile is unavailable: {profile_path.resolve()}")
     profile = QualityProfile.model_validate_json(profile_path.read_text(encoding="utf-8"))
-    if profile.profile_version != 3:
+    if profile.profile_version not in {3, 4}:
         raise RuntimeError("Quality profile v3 calibration is required for Terra routing")
-    if (profile.model_id, profile.reasoning_effort) != PRIMARY_MODEL:
-        raise RuntimeError("Quality profile does not match the active primary model")
+    if (profile.model_id, profile.reasoning_effort) != expected_model:
+        raise RuntimeError("Quality profile does not match the active verification model")
     return profile
 
 
@@ -112,6 +136,8 @@ def segment_features(
     extraction: PageExtraction,
     index: int,
     audit: SegmentAudit,
+    *,
+    include_business_rules: bool = False,
 ) -> tuple[tuple[float, ...], tuple[str, ...]]:
     element = extraction.children[index]
     text = extraction.markdown[element.grounding.range.start : element.grounding.range.end]
@@ -120,7 +146,7 @@ def segment_features(
     boxes = _box_score(element)
     cleanliness = _ocr_cleanliness(text)
     table = _table_consistency(element, text)
-    verifier_findings = verify_sensitive_values(text)
+    verifier_findings = verify_sensitive_values(text) if include_business_rules else []
     finding_score = max(0.0, _finding_score(audit) - 0.25 * len(verifier_findings))
     features = (1.0, completeness, boxes, cleanliness, table, agreement, finding_score)
     reasons = []
@@ -144,6 +170,14 @@ class CalibrationSample:
     document: str
     features: tuple[float, ...]
     actual_quality: float
+    human_verified: bool = False
+
+
+def document_family(name: str) -> str:
+    normalized = re.sub(r"[^a-z0-9]", "", name.lower())
+    if "amerigroup" in normalized:
+        return "amerigroup"
+    return re.sub(r"[0-9]+$", "", normalized)
 
 
 def fit_quality_profile(
@@ -152,29 +186,64 @@ def fit_quality_profile(
     prompt_hashes: dict[str, str],
     groundtruth_hashes: dict[str, str],
     threshold: float = 90.0,
-    model_id: str = PRIMARY_MODEL[0],
-    reasoning_effort: str = PRIMARY_MODEL[1],
+    model_id: str = VERIFICATION_MODEL[0],
+    reasoning_effort: str = VERIFICATION_MODEL[1],
 ) -> QualityProfile:
     """Fit and leave-one-document-out validate a small logistic calibrator."""
 
     if not samples or len({sample.document for sample in samples}) < 2:
         raise ValueError("calibration requires samples from at least two documents")
+    families = sorted({document_family(sample.document) for sample in samples})
     predictions: list[tuple[float, bool]] = []
-    documents = sorted({sample.document for sample in samples})
-    for held_out in documents:
-        training = [sample for sample in samples if sample.document != held_out]
+    accepted: list[tuple[float, bool]] = []
+    boundaries: list[float] = []
+    for held_out in families:
+        training = [sample for sample in samples if document_family(sample.document) != held_out]
+        inner_predictions: list[tuple[float, bool]] = []
+        for validation_family in families:
+            if validation_family == held_out:
+                continue
+            inner_training = [
+                sample
+                for sample in training
+                if document_family(sample.document) != validation_family
+            ]
+            if not inner_training:
+                continue
+            weights, bias = _fit_logistic(inner_training, threshold)
+            inner_predictions.extend(
+                (
+                    _logistic_score(weights, bias, sample.features),
+                    sample.actual_quality >= 100.0,
+                )
+                for sample in training
+                if document_family(sample.document) == validation_family
+            )
+        boundary = _safe_boundary(inner_predictions, max_false_accept_rate=0.0)
+        boundaries.append(boundary)
+        if not training:
+            continue
         coefficients, intercept = _fit_logistic(training, threshold)
         for sample in samples:
-            if sample.document == held_out:
+            if document_family(sample.document) == held_out:
                 score = _logistic_score(coefficients, intercept, sample.features)
-                predictions.append((score, sample.actual_quality >= threshold))
-    boundary = _safe_boundary(predictions, max_false_accept_rate=0.10)
-    accepted = [(score, actual) for score, actual in predictions if score >= boundary]
+                result = (score, sample.actual_quality >= 100.0)
+                predictions.append(result)
+                if score >= boundary:
+                    accepted.append(result)
+    boundary = max(boundaries, default=100.0)
     false_accepts = sum(not actual for _, actual in accepted)
     false_accept_rate = false_accepts / len(accepted) if accepted else 0.0
+    promoted = (
+        len(families) >= 3
+        and bool(accepted)
+        and false_accepts == 0
+        and all(sample.human_verified for sample in samples)
+    )
+    documents = {sample.document for sample in samples}
     coefficients, intercept = _fit_logistic(samples, threshold)
     return QualityProfile(
-        profile_version=3,
+        profile_version=4,
         feature_names=FEATURE_NAMES,
         coefficients=coefficients,
         intercept=intercept,
@@ -182,12 +251,16 @@ def fit_quality_profile(
         prompt_hashes=prompt_hashes,
         groundtruth_hashes=groundtruth_hashes,
         validation={
+            "promotion_passed": int(promoted),
+            "held_out_family_count": len(families),
+            "human_verified": int(all(sample.human_verified for sample in samples)),
+            "correctness_boundary": 100.0,
             "sample_count": len(samples),
             "document_count": len(documents),
             "accepted_count": len(accepted),
             "false_accept_count": false_accepts,
             "false_accept_rate": false_accept_rate,
-            "acceptance_rate": len(accepted) / len(predictions),
+            "acceptance_rate": len(accepted) / max(1, len(predictions)),
             "raw_decision_boundary": boundary,
         },
         raw_decision_boundary=boundary,
@@ -212,7 +285,7 @@ def _fit_logistic(
     samples: list[CalibrationSample], threshold: float
 ) -> tuple[tuple[float, ...], float]:
     coefficients = [0.0] * len(FEATURE_NAMES)
-    positive_rate = sum(sample.actual_quality >= threshold for sample in samples) / len(samples)
+    positive_rate = sum(sample.actual_quality >= 100.0 for sample in samples) / len(samples)
     positive_rate = min(0.999, max(0.001, positive_rate))
     intercept = math.log(positive_rate / (1 - positive_rate))
     learning_rate = 0.3
@@ -221,7 +294,7 @@ def _fit_logistic(
         gradients = [0.0] * len(coefficients)
         intercept_gradient = 0.0
         for sample in samples:
-            target = float(sample.actual_quality >= threshold)
+            target = float(sample.actual_quality >= 100.0)
             prediction = _sigmoid(
                 intercept
                 + sum(

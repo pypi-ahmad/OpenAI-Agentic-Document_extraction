@@ -1,4 +1,15 @@
-"""Deterministic metrics shared by evaluation and quality calibration."""
+"""Deterministic metrics shared by evaluation and quality calibration.
+
+Responsible for: pure, side-effect-free scoring (element alignment, character
+error rate, precision/recall/F1, table-shape/cell comparison) between a
+GroundTruth document and a generated one. Must NOT read files, call the
+network, or depend on run configuration — callers (`evaluation.py`,
+`calibration.py`) own I/O and orchestration. All ranges/offsets here are
+Unicode-codepoint, start-inclusive/end-exclusive slices into `document.markdown`
+(see `page_markdown`/`element_text`), matching the GroundTruth contract
+described in `profile.py`. Continue to `evaluation.py` for how these metrics
+are aggregated into a run report.
+"""
 
 from __future__ import annotations
 
@@ -12,11 +23,18 @@ from typing import Any
 
 from ade_app.models import GroundTruthDocument, PageNode, TableElement
 
+# Strips the trailing "<!-- doc_id=... -->" marker before comparison: it is a
+# per-run transport artifact, not extracted content, and must not count as an edit.
 DOC_ID_RE = re.compile(r"\n*<!-- doc_id=[^>]+ -->\s*$")
 HEADING_RE = re.compile(r"^(#{1,6})\s+(.*)$")
 
 
 class _TableParser(HTMLParser):
+    """Extract cell text/rowspan/colspan from the HTML `<table>` markup GroundTruth
+    Markdown embeds (see profile.py's "tables": "html" contract). Malformed or
+    unclosed tags are simply ignored rather than raised, since this only feeds
+    scoring, not the authoritative document."""
+
     def __init__(self) -> None:
         super().__init__()
         self.tables: list[list[list[dict[str, Any]]]] = []
@@ -108,13 +126,9 @@ def evaluate_page(
         [table_shape(table) for table in candidate_tables],
     )
     gt_cells = [cell["text"] for table in gt_tables for row in table for cell in row]
-    candidate_cells = [
-        cell["text"] for table in candidate_tables for row in table for cell in row
-    ]
+    candidate_cells = [cell["text"] for table in candidate_tables for row in table for cell in row]
     cell_matches = lcs_length(gt_cells, candidate_cells)
-    cell_edits, cell_cer, _ = character_error_rate(
-        "\n".join(gt_cells), "\n".join(candidate_cells)
-    )
+    cell_edits, cell_cer, _ = character_error_rate("\n".join(gt_cells), "\n".join(candidate_cells))
     exact_fields = sum(
         element_text(gt_doc, gt_page.children[left])
         == element_text(generated_doc, generated_page.children[right])
@@ -159,9 +173,7 @@ def evaluate_page(
         "markdown_edits": edits,
         "markdown_cer": cer,
         "markdown_similarity": similarity,
-        "headings": precision_recall_f1(
-            heading_matches, len(candidate_headings), len(gt_headings)
-        ),
+        "headings": precision_recall_f1(heading_matches, len(candidate_headings), len(gt_headings)),
         "tables": precision_recall_f1(table_matches, len(candidate_tables), len(gt_tables)),
         "table_cell_values": {
             **precision_recall_f1(cell_matches, len(candidate_cells), len(gt_cells)),
@@ -177,6 +189,13 @@ def align_elements(
     gt_page: PageNode,
     candidate_page: PageNode,
 ) -> list[tuple[int, int]]:
+    """Sequence-align GT and candidate elements (order-preserving, allows skips on
+    either side) so mismatched counts don't cascade into every later index. A pair
+    can only match if same type; the match score blends text similarity (0.8) and
+    box IoU (0.2), then subtracts 0.5 so a weak match loses to skipping either
+    element (equivalent to a zero-score "skip" move in a Needleman-Wunsch-style DP).
+    """
+
     left, right = gt_page.children, candidate_page.children
     scores = [[0.0] * (len(right) + 1) for _ in range(len(left) + 1)]
     choices = [[""] * (len(right) + 1) for _ in range(len(left) + 1)]
@@ -243,6 +262,9 @@ def field_agreement(
         if isinstance(expected, TableElement) and isinstance(candidate, TableElement):
             table_cells_reference += len(expected.children)
             table_cells_candidate += len(candidate.children)
+            # Non-strict zip: cells beyond the shorter list are neither matched nor
+            # scored as mismatches here; the shape difference is still reflected in
+            # table_cells_reference/table_cells_candidate above (and thus in recall).
             for expected_cell, candidate_cell in zip(
                 expected.children, candidate.children, strict=False
             ):
@@ -332,16 +354,34 @@ def aggregate_documents(documents: list[dict[str, Any]]) -> dict[str, Any]:
             )
         ),
         "elapsed_ms": sum(int(document.get("elapsed_ms", 0)) for document in documents),
-        "api_call_count": sum(int(page.get("api_call_count", 0)) for page in pages),
+        "api_call_count": sum(
+            int(
+                document.get(
+                    "api_call_count",
+                    sum(int(page.get("api_call_count", 0)) for page in document.get("pages", [])),
+                )
+            )
+            for document in documents
+        ),
         "routing_call_count": sum(int(page.get("routing_call_count", 0)) for page in pages),
-        "fallback_page_count": sum(int(page.get("routing_call_count", 0)) > 0 for page in pages),
+        "fallback_page_count": sum(
+            bool(page["full_page_fallback"])
+            if "full_page_fallback" in page
+            else int(page.get("routing_call_count", 0)) > 0
+            for page in pages
+        ),
+        "fallback_unknown_page_count": sum(
+            page.get("full_page_fallback") is None for page in pages
+        ),
         "retry_count": sum(int(page.get("retry_count", 0)) for page in pages),
         "failed_page_count": sum(page.get("status") != "ok" for page in pages),
+        # Lets a report consumer distinguish "usage/cost totals are exact" from
+        # "some page lacks the fields needed to trust a cost/usage sum" (e.g. an
+        # older report schema or a page evaluated without full runtime metadata).
         "usage_complete": all(
             page.get("status") == "ok"
             and all(
-                field in page
-                for field in ("api_call_count", "routing_call_count", "retry_count")
+                field in page for field in ("api_call_count", "routing_call_count", "retry_count")
             )
             and isinstance(page.get("usage"), dict)
             and all(field in page["usage"] for field in usage_fields)
@@ -412,9 +452,7 @@ def inline_text(value: str) -> str:
     return " ".join(unicodedata.normalize("NFC", value).split())
 
 
-def _sum_precision_recall_f1(
-    pages: list[dict[str, Any]], key: str
-) -> dict[str, Any]:
+def _sum_precision_recall_f1(pages: list[dict[str, Any]], key: str) -> dict[str, Any]:
     return precision_recall_f1(
         sum(page.get(key, {}).get("matched", 0) for page in pages),
         sum(page.get(key, {}).get("candidate", 0) for page in pages),
@@ -423,6 +461,9 @@ def _sum_precision_recall_f1(
 
 
 def _levenshtein(left: str, right: str) -> int:
+    """Edit distance via single-row DP; common prefix/suffix are trimmed first
+    since they can never contribute an edit, bounding memory to the differing span."""
+
     prefix = 0
     for left_char, right_char in zip(left, right, strict=False):
         if left_char != right_char:

@@ -1,4 +1,14 @@
-"""Bounded multi-document orchestration around the existing document pipeline."""
+"""Bounded multi-document orchestration around the existing document pipeline.
+
+Responsible for enforcing batch-wide limits (file count, byte size, page
+count, raster-pixel budget, unique item IDs, ordered pages) and for running
+up to MAX_FILE_WORKERS documents concurrently, each with up to
+MAX_PAGE_WORKERS_PER_DOCUMENT page workers. This is a distinct, larger
+concurrency bound than the process-wide OpenAI call semaphore enforced in
+ade_app.openai_client — open that module next to see how individual API
+calls are throttled underneath this layer. Must NOT perform rasterization or
+extraction itself; both are delegated (render_pages / ade_app.pipeline).
+"""
 
 from __future__ import annotations
 
@@ -70,7 +80,11 @@ class BatchFileResult:
     def status(self) -> Literal["ok", "partial", "failed"]:
         if self.run is None:
             return "failed"
-        if any(page.status == "failed" for page in self.run.pages):
+        if (
+            any(page.status == "failed" for page in self.run.pages)
+            or self.run.manifest.get("review_required")
+            or self.run.annotation_limitations
+        ):
             return "partial"
         return "ok"
 
@@ -118,9 +132,7 @@ class BatchExtractionRun:
 
 
 BatchProgressCallback = Callable[[BatchProgress], None]
-PageRenderer = Callable[
-    [DocumentInput, tuple[int, ...], int], tuple[RenderedPage, ...]
-]
+PageRenderer = Callable[[DocumentInput, tuple[int, ...], int], tuple[RenderedPage, ...]]
 
 
 def extract_documents(
@@ -131,9 +143,14 @@ def extract_documents(
     dpi: int = DEFAULT_DPI,
     render_pages: PageRenderer | None = None,
     progress: BatchProgressCallback | None = None,
+    retry_failed_fields_with_sol: bool = False,
+    max_graph_retries: int = 1,
 ) -> BatchExtractionRun:
     """Run documents and pages concurrently within explicit production bounds."""
 
+    # Batch-level limits are all checked up front, before any rendering or
+    # extraction starts, so an oversized/invalid batch fails fast instead of
+    # burning API calls on some documents before rejecting the batch.
     if not documents:
         raise ValueError("at least one document is required")
     if len(documents) > MAX_BATCH_FILES:
@@ -149,10 +166,7 @@ def extract_documents(
     for document in documents:
         if not document.pages:
             raise ValueError("every document requires at least one selected page")
-        if any(
-            current <= previous
-            for previous, current in pairwise(document.pages)
-        ):
+        if any(current <= previous for previous, current in pairwise(document.pages)):
             raise ValueError("selected pages must be strictly increasing and unique")
     estimated_pixels = sum(
         estimate_render_pixels(document.source, document.pages, dpi) for document in documents
@@ -163,6 +177,11 @@ def extract_documents(
         )
 
     renderer = render_pages or _render_pages
+    # extract_document's own progress callback fires from worker threads (one
+    # per document, via the pool below). progress() is caller-supplied UI code
+    # (e.g. Streamlit) that must only run on this thread, so page-level events
+    # are queued here and drained from the main loop instead of being called
+    # directly from a worker thread.
     events: queue.Queue[tuple[str, int, str]] = queue.Queue()
     by_id = {document.item_id: document for document in documents}
     page_statuses: dict[tuple[str, int], str] = {}
@@ -209,7 +228,9 @@ def extract_documents(
             record_page_status(item_id, source_page, status)
 
     def run_document(document: BatchDocument) -> ExtractionRun:
-        rendered = renderer(document.source, document.pages, dpi)
+        rendered = (
+            renderer(document.source, document.pages, dpi) if render_pages is not None else None
+        )
         return extract_document(
             document.source,
             document.pages,
@@ -220,6 +241,8 @@ def extract_documents(
             progress=lambda _completed, _failed, _total, page, status: events.put(
                 (document.item_id, page, status)
             ),
+            retry_failed_fields_with_sol=retry_failed_fields_with_sol,
+            max_graph_retries=max_graph_retries,
         )
 
     with ThreadPoolExecutor(max_workers=min(max_file_workers, len(documents))) as pool:
@@ -275,6 +298,8 @@ def extract_documents(
                 markdown=result.run.artifact.markdown,
                 json_filename=result.run.json_filename,
                 json_text=result.run.json_text,
+                confidence_filename=result.run.confidence_filename,
+                confidence_text=result.run.confidence_text,
                 annotated_pdf_filename=result.run.annotated_pdf_filename,
                 annotated_pdf=result.run.annotated_pdf,
                 manifest=result.run.manifest,
@@ -284,8 +309,7 @@ def extract_documents(
     partial_count = sum(result.status == "partial" for result in ordered)
     hard_failure_count = sum(result.status == "failed" for result in ordered)
     review_required_count = sum(
-        result.run is None or bool(result.run.manifest["review_required"])
-        for result in ordered
+        result.run is None or bool(result.run.manifest["review_required"]) for result in ordered
     )
     page_failure_count = sum(
         len(result.selected_pages)
@@ -335,14 +359,10 @@ def extract_documents(
                 "selected_pages": list(result.selected_pages),
                 "status": result.status,
                 "review_required": (
-                    True
-                    if result.run is None
-                    else bool(result.run.manifest["review_required"])
+                    True if result.run is None else bool(result.run.manifest["review_required"])
                 ),
                 "review_state": (
-                    "failed"
-                    if result.run is None
-                    else result.run.manifest["review_state"]
+                    "failed" if result.run is None else result.run.manifest["review_state"]
                 ),
                 "failure_reason": result.failure_reason,
                 "usage": (
@@ -383,7 +403,6 @@ def _render_pages(
 def _safe_stem(filename: str) -> str:
     stem = filename.rsplit(".", 1)[0]
     value = "".join(
-        character if character.isalnum() or character in "._-" else "_"
-        for character in stem
+        character if character.isalnum() or character in "._-" else "_" for character in stem
     )
     return value or "document"
