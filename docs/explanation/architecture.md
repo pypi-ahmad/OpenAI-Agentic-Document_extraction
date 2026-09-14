@@ -7,18 +7,22 @@ renders, annotates, accounts for, and packages that data.
 ```mermaid
 flowchart LR
     U[Authorized uploads] --> B[Validated BatchDocument tuple]
-    B --> R[Selected RenderedPage images]
-    R --> T[Terra structured extraction]
-    T --> Q[Validation and quality evidence]
+    B --> R[PyMuPDF 300 DPI pages]
+    R --> P[Conditional OpenCV preprocessing]
+    P --> L[PP-StructureV3 + form geometry]
+    L -->|calibrated printed regions| D
+    L -->|ambiguous or uncalibrated| G[LangGraph page fan-out]
+    G --> N[Luna structured extraction]
+    N --> Q[Validation and quality evidence]
     Q -->|accepted| D[Deterministic renderer]
-    Q -->|sub-threshold| I[Independent Terra crop]
+    Q -->|uncalibrated or unresolved| I[Independent Terra crop]
     I -->|agreement| D
     I -->|field disagreement| S[Sol field-resolution crop]
     I -->|uncertain or conflict| H[needs_review]
     S -->|resolved| D
     S -->|unresolved| H
     H --> D
-    D --> O[JSON, Markdown, annotated PDF, ZIP and manifest]
+    D --> O[JSON, Markdown, confidence JSON, annotated PDF and ZIP]
 ```
 
 ## Component boundaries
@@ -27,10 +31,12 @@ flowchart LR
 |---|---|---|
 | UI/session | `streamlit_app.py`, `session.py` | Authorization, uploads, page controls, progress, reset, previews, downloads |
 | Batch scheduling | `batch.py` | File/page/byte/pixel limits, four-document pool, failure isolation |
-| Input imaging | `inputs.py`, `raster.py` | Filename/content checks, page selection, bounded raster images and crops |
+| Workflow | `orchestration/` | In-memory LangGraph page fan-out, source-order merge, no PHI checkpoint |
+| Input imaging | `inputs.py`, `raster.py`, `preprocessing.py` | Filename/content checks, 300 DPI rasterization, conditional reversible cleanup |
+| Layout/routing | `layout.py`, `hybrid.py` | PP-StructureV3 regions, form geometry proposals, calibrated fail-closed routing |
 | Model access | `openai_client.py`, `prompts/*.md` | Responses API calls, structured parsing, request metadata, staged routing |
 | Quality evidence | `quality.py`, `consensus.py`, `verification.py` | Calibrated signals, peer evidence, field comparison, non-correcting format checks |
-| Output contract | `models.py`, `rendering.py`, `outputs.py` | Strict schemas, deterministic Markdown/ranges/IDs, annotations, archives |
+| Output contract | `models.py`, `schemas/`, `services/confidence.py`, `outputs.py` | Strict schemas, deterministic Markdown/ranges/IDs, confidence, annotations, archives |
 | Measurement | `corpus.py`, `profile.py`, `calibration.py`, `evaluation.py` | Exact-stem mapping, profile discovery, calibration, GroundTruth metrics |
 
 ## End-to-end walkthrough
@@ -75,7 +81,10 @@ is therefore an upload limit, not API concurrency.
 DocumentInput + pages → tuple[RenderedPage(source_page, png_bytes, width, height), ...]
 ```
 
-### 4. Terra produces the primary semantic page
+### 4. Local analysis routes primary semantic extraction
+
+PP-Structure layout input is capped at 1,600 pixels on its longest side. Coordinate transforms
+map its regions back to the configured full-resolution page used for model verification.
 
 `extract_document` in `pipeline.py` detects the staged extractor and runs `extract_primary`.
 `OpenAIPageExtractor` submits the page image to the Responses API with
@@ -94,13 +103,14 @@ Failure branch: a page-level provider, runtime, or validation failure becomes a 
 ### 5. Low-quality segments follow the repair branches
 
 `OpenAIPageExtractor.finalize` measures every primary segment and records its score, reasons, and
-attempts. For a sub-threshold segment:
+attempts. Every uncalibrated segment requires independent verification, regardless of its score.
+The configured escalation limit bounds attempted reads; excess segments receive
+`repair_budget_exhausted` and require review:
 
 1. An independent Terra request sees the original crop, not the primary transcription.
 2. Document-local peer evidence may accompany that crop when a clearer stable repeated region
    exists; `consensus.py` owns peer comparison.
-3. Field-level agreement preserves the candidate; disagreements send only disputed crop/value
-   pairs to Sol.
+3. Field-level agreement preserves the candidate; disagreements send disputed crops and structural IDs to Sol, with parent context but no candidate answers.
 4. Unresolved fields, structural conflicts, failed calls, and exhausted repair budget remain
    `needs_review` rather than receiving fabricated content.
 
@@ -117,11 +127,12 @@ result → SegmentRecord(status, score, reasons, attempts)
 `render_semantic_page` in `rendering.py` converts semantic lines, styles, checkboxes, figures,
 and table cells into deterministic Markdown and local ranges. `render_document` restores
 requested page order, rebases ranges, assigns IDs, records failed pages, and constructs a
-validated `GroundTruthDocument`. The pipeline serializes and validates that document again
+validated `GroundTruthDocument`, then deterministically links generic fields and NPI/Member ID
+checks into `ExtractionDocumentV3`. The pipeline serializes and validates that document again
 before returning it.
 
 ```text
-list[PageOutcome] → GroundTruthDocument(markdown, metadata, structure) → JSON text
+list[PageOutcome] → GroundTruthDocument → ExtractionDocumentV3(fields + evidence) → JSON text
 ```
 
 ### 7. Review and download artifacts are assembled
@@ -143,8 +154,8 @@ downloads.
 - Completion events may arrive out of order; `pipeline.py` rebuilds records using the requested
   page tuple, and `batch.py` rebuilds files using upload order.
 
-The standalone `extract_document` function defaults to three page workers, and the evaluation
-CLI explicitly uses three. Those are separate executable paths from Streamlit batch processing.
+The standalone `extract_document` function defaults to three page workers. Evaluation reads
+`runtime.max_page_workers`, which defaults to three. These differ from the Streamlit batch limit.
 
 ## Side effects and trust boundaries
 

@@ -17,10 +17,14 @@ Choose the document that matches what you are trying to do.
   boundaries, focused checks, prompt changes, and contract-safe development.
 - [Troubleshooting](troubleshooting.md) — startup, credentials, uploads, partial results, and slow
   runs.
+- [Operations runbook](RUNBOOK.md) — startup, shutdown, common error strings, and logging.
+- [Contributing](CONTRIBUTING.md) — development setup and verification commands.
 
 ## Understand the system
 
-- [Architecture](explanation/architecture.md) — request flow, model routing, deterministic output,
+- [Architecture](ARCHITECTURE.md) — request/data flow, main types, and external systems.
+- [Technical details](TECHNICAL.md) — stack, invariants, error handling, and persistence.
+- [Architecture explanation](explanation/architecture.md) — request flow, model routing, deterministic output,
   concurrency, privacy, and trust boundaries.
 
 ## Look something up
