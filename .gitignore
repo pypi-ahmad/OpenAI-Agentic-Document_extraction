@@ -3,6 +3,7 @@
 .code-review-graph/
 .firecrawl/
 .venv/
+.venv-cuda-stalled-*/
 .pytest_cache/
 .ruff_cache/
 .streamlit/secrets.toml
@@ -18,8 +19,7 @@ data/
 knowledge/
 profiles/
 research/
-schemas/
+/schemas/
 evaluation/
-tests/
 *.pem
 *.key
