@@ -1,8 +1,9 @@
 """Strict confidence-report schema kept separate from parse JSON v2.
 
-Must not gain fields the writer side (services/confidence.py) doesn't populate,
-and must not be relaxed to accept values the report builder never produces.
-Continue to services/confidence.py to see how a ConfidenceReport is built.
+Responsible for defining structured confidence scores, flagged review fields,
+and human review queue models.
+Must NOT define business scoring heuristics or populate reports directly.
+Next: ade_app.services.confidence to see how ConfidenceReport records are generated.
 """
 
 from __future__ import annotations

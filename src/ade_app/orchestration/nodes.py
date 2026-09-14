@@ -1,10 +1,11 @@
 """LangGraph nodes with one typed stage hand-off each.
 
-Nodes never raise to the graph: `_execute` catches failures and converts them into
-a "next_action": "error" state update instead, so conditional edges can route to END
-cleanly rather than the graph invocation throwing mid-run. See graph.py for how
-next_action maps to edges, and orchestration/state.py for the WorkflowOperations
-Protocol these nodes delegate the real work to.
+Responsible for executing each workflow stage, wrapping operations, and mapping stage
+outcomes into state update dictionaries.
+Must NOT raise exceptions directly to the graph runtime; all unexpected failures are
+caught and mapped to a "next_action": "error" state update so conditional edges route cleanly.
+Next: ade_app.orchestration.graph for routing edges, or
+ade_app.orchestration.state for typed schemas.
 """
 
 from __future__ import annotations

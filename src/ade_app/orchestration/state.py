@@ -1,10 +1,11 @@
 """Explicit typed hand-offs for the document workflow.
 
-StageName/NextAction enumerate the graph's nodes and edge labels; graph.py's
-conditional-edge maps must stay in sync with these two Literals — add a value
-here and a matching edge there together, or the compiled graph raises at
-either compile or dispatch time. See graph.py next for how these drive routing,
-and nodes.py for what actually produces each stage's Mapping payload.
+Responsible for defining graph state containers, workflow error models, stage names,
+action literals, and the WorkflowOperations protocol.
+Must NOT execute workflow logic or evaluate conditional edges; definitions only.
+StageName/NextAction must stay in sync with graph.py's edge maps.
+Next: ade_app.orchestration.graph for conditional routing, and
+ade_app.orchestration.nodes for stage node handlers.
 """
 
 from __future__ import annotations
