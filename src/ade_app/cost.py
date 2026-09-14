@@ -1,9 +1,19 @@
-"""Token usage and official standard-tier GPT-5.6 model pricing."""
+"""Token usage accounting and official standard-tier GPT-5.6 model pricing.
+
+Responsible for tracking token counters (input, cached, write, output, reasoning),
+validating token invariants, and computing exact USD costs using model rate cards.
+Must NOT call billing APIs, make external requests, or modify configuration state.
+Next: ade_app.spending for evaluation budget bounds, or ade_app.pipeline for runtime cost recording.
+"""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from decimal import Decimal
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ade_app.config import PipelineConfig
 
 ONE_MILLION = Decimal(1_000_000)
 MODEL_RATES = {
@@ -11,6 +21,20 @@ MODEL_RATES = {
     "gpt-5.6-terra": (Decimal("2.00"), Decimal("0.20"), Decimal("2.50"), Decimal("12.00")),
     "gpt-5.6-sol": (Decimal("4.00"), Decimal("0.40"), Decimal("5.00"), Decimal("20.00")),
 }
+
+
+def configure_model_rates(config: PipelineConfig) -> None:
+    """Install validated rates for the active process configuration."""
+
+    for model in (config.models.luna, config.models.terra, config.models.sol):
+        MODEL_RATES[model.name] = (
+            model.input_rate,
+            model.cached_input_rate,
+            model.cache_write_rate,
+            model.output_rate,
+        )
+
+
 # Backward-compatible aliases used by the evaluation report.
 INPUT_RATE, CACHED_INPUT_RATE, CACHE_WRITE_RATE, OUTPUT_RATE = MODEL_RATES["gpt-5.6-terra"]
 
@@ -24,6 +48,10 @@ class TokenUsage:
     cache_write_tokens: int = 0
     output_tokens: int = 0
     reasoning_tokens: int = 0
+    long_input_tokens: int = 0
+    long_cached_tokens: int = 0
+    long_write_tokens: int = 0
+    long_output_tokens: int = 0
 
     def __post_init__(self) -> None:
         values = (
@@ -32,6 +60,10 @@ class TokenUsage:
             self.cache_write_tokens,
             self.output_tokens,
             self.reasoning_tokens,
+            self.long_input_tokens,
+            self.long_cached_tokens,
+            self.long_write_tokens,
+            self.long_output_tokens,
         )
         if any(value < 0 for value in values):
             raise ValueError("token counts cannot be negative")
@@ -47,6 +79,10 @@ class TokenUsage:
             cache_write_tokens=self.cache_write_tokens + other.cache_write_tokens,
             output_tokens=self.output_tokens + other.output_tokens,
             reasoning_tokens=self.reasoning_tokens + other.reasoning_tokens,
+            long_input_tokens=self.long_input_tokens + other.long_input_tokens,
+            long_cached_tokens=self.long_cached_tokens + other.long_cached_tokens,
+            long_write_tokens=self.long_write_tokens + other.long_write_tokens,
+            long_output_tokens=self.long_output_tokens + other.long_output_tokens,
         )
 
 
@@ -63,4 +99,9 @@ def calculate_cost(usage: TokenUsage, model: str = "gpt-5.6-terra") -> Decimal:
         + Decimal(usage.cached_input_tokens) * cached_rate
         + Decimal(usage.cache_write_tokens) * cache_write_rate
         + Decimal(usage.output_tokens) * output_rate
+        + Decimal(usage.long_input_tokens - usage.long_cached_tokens - usage.long_write_tokens)
+        * input_rate
+        + Decimal(usage.long_cached_tokens) * cached_rate
+        + Decimal(usage.long_write_tokens) * cache_write_rate
+        + Decimal(usage.long_output_tokens) * output_rate / 2
     ) / ONE_MILLION

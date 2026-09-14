@@ -1,4 +1,14 @@
-"""Strict schemas for model drafts and GroundTruth-compatible artifacts."""
+"""Strict schemas for model drafts and GroundTruth-compatible artifacts.
+
+Owns every schema that crosses a trust boundary: raw structured output coming
+back from the OpenAI cascade (the ``Semantic*``/``Draft*`` families) on the
+way in, and the versioned ``GroundTruthDocument``/``ExtractionDocumentV2``/
+``ExtractionDocumentV3`` artifacts on the way out. Must not render Markdown,
+touch the filesystem or network, or apply routing/business logic beyond the
+structural and cross-field invariants checked here. Continue to rendering.py,
+which turns the semantic/draft types defined here into a validated
+``GroundTruthDocument``.
+"""
 
 from __future__ import annotations
 
@@ -30,6 +40,7 @@ ElementType = Literal[
 ID_PATTERN = re.compile(
     r"^(text|table|table_cell|figure|logo|marginalia|attestation|scan_code)-(0|[1-9]\d*)$"
 )
+# 26-char Crockford base32 (excludes i, l, o, u) matches the observed ULID-style job id body.
 JOB_ID_PATTERN = re.compile(r"^parse-[0-9a-hjkmnp-tv-z]{26}$")
 
 # Model-facing collection limits bound malformed or adversarial structured output.
@@ -130,7 +141,7 @@ class SemanticText(StrictModel):
 
 class SemanticCheckbox(StrictModel):
     kind: Literal["checkbox"] = "checkbox"
-    checked: bool
+    checked: bool | None
 
 
 SemanticInline = SemanticText | SemanticCheckbox
@@ -242,10 +253,14 @@ class AuditedSemanticPageExtraction(SemanticPageExtraction):
         return self
 
 
+class SegmentPatchAudit(SegmentAudit):
+    segment_index: Literal[0] = 0
+
+
 class SemanticSegmentPatch(StrictModel):
     segment_id: str
     element: SemanticElement
-    audit: SegmentAudit
+    audit: SegmentPatchAudit
 
     @model_validator(mode="after")
     def validate_patch(self) -> Self:
@@ -429,6 +444,142 @@ class GroundTruthDocument(StrictModel):
                     raise ValueError("page elements must be in reading order")
                 previous_start = element.grounding.range.start
         return self
+
+
+class FieldEvidence(StrictModel):
+    page: int = Field(ge=1)
+    region_id: str
+    box: Box
+    route: Literal["local_text", "local_table", "luna", "terra", "sol"]
+    candidate: str | bool
+    confidence: float = Field(ge=0, le=100)
+    semantic_id: str | None = None
+    crop_sha256: str | None = None
+    verification: Literal["unverified", "agreed", "calibrated", "unresolved"] = "unverified"
+    calibrated_probability: float | None = Field(default=None, ge=0, le=1)
+
+
+class FieldValidationCheck(StrictModel):
+    rule: str
+    passed: bool
+    message: str
+
+
+class ExtractedField(StrictModel):
+    field_id: str
+    original_name: str
+    canonical_name: str
+    value: str | bool
+    confidence: float = Field(ge=0, le=100)
+    status: Literal["accepted", "needs_review", "conflict"]
+    reasons: list[str]
+    evidence: list[FieldEvidence] = Field(min_length=1)
+    validation_checks: list[FieldValidationCheck]
+
+
+class ExtractionDocumentV2(StrictModel):
+    """Public v2 artifact: GroundTruth-compatible structure plus linked fields."""
+
+    schema_version: Literal[2] = 2
+    markdown: str
+    metadata: ParseMetadata
+    structure: DocumentNode
+    fields: list[ExtractedField]
+
+    @model_validator(mode="after")
+    def validate_base_document(self) -> Self:
+        GroundTruthDocument(
+            markdown=self.markdown, metadata=self.metadata, structure=self.structure
+        )
+        ids = [field.field_id for field in self.fields]
+        if len(ids) != len(set(ids)):
+            raise ValueError("field IDs must be unique")
+        return self
+
+
+ValueState = Literal["observed", "blank", "illegible", "ambiguous", "conflicting", "unverified"]
+
+
+class ExtractedFieldV3(StrictModel):
+    """A selected value is present only when supported by source evidence."""
+
+    field_id: str
+    original_name: str
+    canonical_name: str
+    value: str | bool | None
+    value_state: ValueState
+    confidence: float | None = Field(ge=0, le=1)
+    routing_score: float = Field(ge=0, le=100)
+    status: Literal["accepted", "needs_review", "conflict"]
+    reasons: list[str]
+    evidence: list[FieldEvidence] = Field(min_length=1)
+    validation_checks: list[FieldValidationCheck]
+
+    @model_validator(mode="after")
+    def supported_value(self) -> Self:
+        if self.value_state != "observed" and self.value is not None:
+            raise ValueError("non-observed values must be null")
+        if self.value_state == "observed" and self.value is None:
+            raise ValueError("observed values cannot be null")
+        if self.confidence is not None:
+            probabilities = [item.calibrated_probability for item in self.evidence]
+            if any(value is None for value in probabilities) or self.confidence != min(
+                value for value in probabilities if value is not None
+            ):
+                raise ValueError("confidence requires matching calibrated evidence")
+        if self.status == "accepted":
+            if self.value_state not in {"observed", "blank"}:
+                raise ValueError("uncertain fields cannot be accepted")
+            if not any(
+                item.verification in {"agreed", "calibrated"}
+                and (
+                    item.candidate == self.value
+                    if self.value_state == "observed"
+                    else item.candidate == ""
+                )
+                for item in self.evidence
+            ):
+                raise ValueError("accepted fields require verified evidence")
+            if any(not check.passed for check in self.validation_checks):
+                raise ValueError("accepted fields cannot have failed checks")
+        return self
+
+
+class ExtractionDocumentV3(StrictModel):
+    schema_version: Literal[3] = 3
+    markdown: str
+    metadata: ParseMetadata
+    structure: DocumentNode
+    fields: list[ExtractedFieldV3]
+
+    @model_validator(mode="after")
+    def validate_base_document(self) -> Self:
+        GroundTruthDocument(
+            markdown=self.markdown, metadata=self.metadata, structure=self.structure
+        )
+        return self
+
+
+def parse_extraction_artifact(data: str | bytes) -> ExtractionDocumentV2 | ExtractionDocumentV3:
+    """Read an explicit artifact version without synthesizing missing evidence."""
+    import json
+
+    payload = json.loads(data)
+    version = payload.get("schema_version") if isinstance(payload, dict) else None
+    if type(version) is not int or version not in {2, 3}:
+        raise ValueError("unsupported extraction schema version")
+    model = ExtractionDocumentV2 if version == 2 else ExtractionDocumentV3
+    return model.model_validate(payload)
+
+
+class PostProcessingFieldResolution(StrictModel):
+    field_id: str
+    value: str | bool
+    confidence: float = Field(ge=0, le=100)
+
+
+class PostProcessingResolutionBatch(StrictModel):
+    resolutions: list[PostProcessingFieldResolution] = Field(max_length=4)
 
 
 def _check_range(value: TextRange, limit: int, label: str) -> None:

@@ -35,7 +35,7 @@ try {
         throw "Port $port did not become available after stopping its verified owner."
     }
 
-    & uv run --frozen streamlit run streamlit_app.py --server.port $port `
+    & uv run --no-sync streamlit run streamlit_app.py --server.port $port `
         --server.address 127.0.0.1 --server.enableXsrfProtection true
     if ($LASTEXITCODE -ne 0) {
         throw "Streamlit exited with code $LASTEXITCODE."

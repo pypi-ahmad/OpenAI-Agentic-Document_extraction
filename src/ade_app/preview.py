@@ -1,4 +1,11 @@
-"""Safe rendering adapter for GroundTruth-style mixed Markdown and HTML."""
+"""Safe rendering adapter for GroundTruth-style mixed Markdown and HTML.
+
+Responsible for sanitizing extracted Markdown for safe UI preview display,
+preserving valid structure tags (tables, figures, page breaks) while neutralizing
+unsafe HTML, links, and images.
+Must NOT alter the canonical Markdown artifacts written to disk or output bundles.
+Next: streamlit_app.py which renders preview tabs for extracted documents.
+"""
 
 from __future__ import annotations
 

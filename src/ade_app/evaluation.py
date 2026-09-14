@@ -1,4 +1,14 @@
-"""Reproducible GroundTruth evaluation using the production extraction pipeline."""
+"""Reproducible GroundTruth evaluation using the production extraction pipeline.
+
+Responsible for: mapping curated/full suites onto `corpus.py` inventory, driving
+`pipeline.extract_document` through the real extractor, and writing a versioned
+report.json/report.md/report.zip per run under `evaluation/runs/`. Must NOT
+score against generated GroundTruth as if it were human-verified accuracy (see
+the "accuracy_claim"/"note" strings below) and must NOT let `--acknowledge-sensitive-output`
+be skipped, since live runs send real page images to OpenAI. Recalibration of
+`profiles/segment-quality-*.json` is a separate concern.
+Next: ade_app.calibration to follow quality profiling, or ade_app.evaluation_metrics for scoring.
+"""
 
 from __future__ import annotations
 
@@ -11,11 +21,12 @@ import time
 import zipfile
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from decimal import Decimal
 from importlib.metadata import version
 from pathlib import Path
 from typing import Any
 
-from ade_app.constants import DEFAULT_DPI, MODEL_CASCADE, MODEL_ID
+from ade_app.config import PipelineConfig
 from ade_app.corpus import CorpusDocument, CorpusExclusion, inventory_corpus
 from ade_app.cost import MODEL_RATES
 from ade_app.evaluation_metrics import (
@@ -26,16 +37,16 @@ from ade_app.evaluation_metrics import (
     lcs_length,
     normalize_markdown,
 )
+from ade_app.hybrid import routing_fingerprint
 from ade_app.inputs import DocumentInput
 from ade_app.models import GroundTruthDocument
 from ade_app.openai_client import (
     FULL_PAGE_MAX_ATTEMPTS,
-    OpenAIPageExtractor,
     active_prompt_hashes,
-    build_responses_parser,
-    resolve_api_key,
 )
 from ade_app.pipeline import ExtractionRun, extract_document
+from ade_app.runner import create_extractor
+from ade_app.spending import SpendLedger
 
 MAX_EVALUATION_REPORT_BYTES = 10 * 1024 * 1024
 
@@ -49,6 +60,9 @@ __all__ = [
     "run_evaluation",
 ]
 
+# Hand-picked (document stem -> pages) subset for fast/cheap runs. `_select_samples`
+# raises if a listed page is not actually present in the corpus document, so this
+# must stay in sync with `data/GroundTruths` contents.
 CURATED_SUITE: dict[str, tuple[int, ...]] = {
     "Masked Amerigroup_1": (1, 2),
     "Masked BadgeCare Plus_1": (1, 2),
@@ -78,8 +92,8 @@ def parse_evaluation_report(data: bytes) -> dict[str, Any]:
         raise ValueError("evaluation report must be valid UTF-8 JSON") from error
     if not isinstance(report, dict):
         raise ValueError("evaluation report must be a JSON object")
-    if type(report.get("schema_version")) is not int or report["schema_version"] not in {2, 3}:
-        raise ValueError("evaluation report schema_version must be 2 or 3")
+    if type(report.get("schema_version")) is not int or report["schema_version"] not in {2, 3, 4}:
+        raise ValueError("evaluation report schema_version must be 2, 3 or 4")
     if not isinstance(report.get("overall"), dict):
         raise ValueError("evaluation report overall must be an object")
     if not isinstance(report.get("coverage"), dict):
@@ -141,30 +155,83 @@ def evaluate_document(
     }
 
 
-def run_evaluation(*, gt_dir: Path, source_dir: Path, output_root: Path, suite: str) -> Path:
+def run_evaluation(
+    *,
+    gt_dir: Path,
+    source_dir: Path,
+    output_root: Path,
+    suite: str,
+    settings: PipelineConfig | None = None,
+    budget_usd: Decimal = Decimal("10"),
+    resume: Path | None = None,
+    shared_ledger: SpendLedger | None = None,
+) -> Path:
+    settings = settings or PipelineConfig()
     inventory = inventory_corpus(gt_dir, source_dir)
     samples = _select_samples(inventory.documents, suite)
     run_started = datetime.now(UTC)
     config = {
         "suite": suite,
-        "model": MODEL_ID,
+        "pipeline": settings.model_dump(mode="json"),
+        "routing_fingerprint": routing_fingerprint(settings),
+        "source_hashes": {
+            sample.stem: [_sha256(sample.source), _sha256(sample.groundtruth_json)]
+            for sample in samples
+        },
+        "model": settings.models.luna.name,
         "model_cascade": [
-            {"model": model, "reasoning_effort": effort} for model, effort in MODEL_CASCADE
+            {"model": model.name, "reasoning_effort": model.reasoning_effort}
+            for model in (settings.models.luna, settings.models.terra, settings.models.sol)
         ],
         "endpoint": "/v1/responses",
-        "dpi": DEFAULT_DPI,
-        "max_workers": 3,
+        "dpi": settings.imaging.dpi,
+        "max_workers": settings.runtime.max_page_workers,
         "max_full_page_attempts": FULL_PAGE_MAX_ATTEMPTS,
         "prompt_sha256": active_prompt_hashes(),
         "pages": {sample.stem: list(sample.pages) for sample in samples},
     }
     config_hash = hashlib.sha256(_json(config).encode()).hexdigest()[:10]
-    run_dir = output_root / f"{run_started.strftime('%Y%m%dT%H%M%SZ')}-{config_hash}"
-    run_dir.mkdir(parents=True, exist_ok=False)
-    extractor = OpenAIPageExtractor(build_responses_parser(resolve_api_key())) if samples else None
+    run_dir = resume or output_root / f"{run_started.strftime('%Y%m%dT%H%M%SZ')}-{config_hash}"
+    if resume is not None:
+        # A resumed run must reproduce byte-identical configuration (including source
+        # hashes and routing fingerprint) or per-document checkpoints below would be
+        # silently reused against a different pipeline/config.
+        if json.loads((run_dir / "configuration.json").read_text(encoding="utf-8")) != config:
+            raise ValueError("resume inputs, configuration or routing fingerprint changed")
+    else:
+        run_dir.mkdir(parents=True, exist_ok=False)
+        (run_dir / "configuration.json").write_text(_json(config), encoding="utf-8")
+    ledger = shared_ledger or SpendLedger(budget_usd, run_dir / "spending.json")
+    extractor = create_extractor(settings, ledger=ledger) if samples else None
     documents: list[dict[str, Any]] = []
     for sample in samples:
+        checkpoint = run_dir / sample.stem / "metrics.json"
+        if resume is not None and checkpoint.is_file():
+            saved = json.loads(checkpoint.read_text(encoding="utf-8"))
+            # Only a fully successful prior attempt is reused; a partial/failed one
+            # falls through and re-extracts the whole document.
+            if saved.get("valid_json") and saved.get("metrics", {}).get("page_success_rate") == 1:
+                documents.append(saved)
+                continue
         document_started = time.perf_counter()
+        document_call_start = ledger.calls
+        if extractor is not None:
+            capture_dir = run_dir / sample.stem / "primary"
+            capture_dir.mkdir(parents=True, exist_ok=True)
+
+            def capture(page, primary, directory=capture_dir):
+                (directory / f"page-{page.source_page}.json").write_text(
+                    _json(
+                        {
+                            "source_page": page.source_page,
+                            "source_model": primary.source_model,
+                            "extraction": primary.state.rendered.model_dump(mode="json"),
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+
+            extractor.capture_primary = capture
         print(f"Evaluating {sample.stem}: {len(sample.pages)} pages", flush=True)
         groundtruth = GroundTruthDocument.model_validate_json(
             sample.groundtruth_json.read_text(encoding="utf-8")
@@ -177,13 +244,22 @@ def run_evaluation(*, gt_dir: Path, source_dir: Path, output_root: Path, suite: 
                 source,
                 sample.pages,
                 extractor,
-                max_workers=3,
+                max_workers=settings.runtime.max_page_workers,
+                dpi=settings.imaging.dpi,
+                config=settings,
+                retry_failed_fields_with_sol=True,
+                max_graph_retries=settings.retries.graph_max_page_retries,
                 progress=lambda completed, failed, total, page, status: print(
                     f"  {completed}/{total} pages; page={page}; status={status}; failed={failed}",
                     flush=True,
                 ),
             )
-            document_metrics = evaluate_document(groundtruth, run.artifact, sample.pages)
+            generated_common = GroundTruthDocument(
+                markdown=run.artifact.markdown,
+                metadata=run.artifact.metadata,
+                structure=run.artifact.structure,
+            )
+            document_metrics = evaluate_document(groundtruth, generated_common, sample.pages)
             document_record = _document_record(sample, run, document_metrics, document_started)
             _write_run_artifacts(run_dir / sample.stem, run, document_record)
         except Exception as error:  # Keep other samples measurable after document-level failure.
@@ -200,9 +276,7 @@ def run_evaluation(*, gt_dir: Path, source_dir: Path, output_root: Path, suite: 
                 )
                 for page_number in sample.pages
             ]
-            runtime_pages = {
-                page.source_page: page for page in getattr(error, "pages", ())
-            }
+            runtime_pages = {page.source_page: page for page in getattr(error, "pages", ())}
             for page in failed_pages:
                 runtime = runtime_pages.get(page["page"])
                 page.update(_runtime_fields(runtime))
@@ -226,16 +300,25 @@ def run_evaluation(*, gt_dir: Path, source_dir: Path, output_root: Path, suite: 
                 },
                 "estimated_cost_usd": str(getattr(error, "cost_usd", 0)),
                 "api_call_count": sum(page["api_call_count"] for page in failed_pages),
-                "routing_call_count": sum(
-                    page["routing_call_count"] for page in failed_pages
-                ),
+                "routing_call_count": sum(page["routing_call_count"] for page in failed_pages),
                 "retry_count": sum(page["retry_count"] for page in failed_pages),
                 "pages": failed_pages,
             }
+        # Per-page counts can undercount (e.g. a document-level failure before pages
+        # report in); the ledger's own call delta is the authoritative total, so the
+        # page-summed value is kept only as a secondary, informational field.
+        document_record["recorded_page_api_call_count"] = document_record["api_call_count"]
+        document_record["api_call_count"] = ledger.calls - document_call_start
+        checkpoint.parent.mkdir(parents=True, exist_ok=True)
+        checkpoint.write_text(_json(document_record), encoding="utf-8")
         documents.append(document_record)
 
     report = {
-        "schema_version": 3,
+        "schema_version": 4,
+        "spending": ledger.snapshot(),
+        "accuracy_claim": (
+            "Reference agreement only; generated references are not human-verified truth."
+        ),
         "coverage": {
             "source_pdfs_discovered": inventory.discovered_pdf_count,
             "source_pages_discovered": inventory.discovered_page_count,
@@ -283,6 +366,8 @@ def run_evaluation(*, gt_dir: Path, source_dir: Path, output_root: Path, suite: 
     with zipfile.ZipFile(run_dir / "report.zip", "w", zipfile.ZIP_DEFLATED) as archive:
         archive.write(run_dir / "report.json", "report.json")
         archive.write(run_dir / "report.md", "report.md")
+    if shared_ledger is None:
+        ledger.close()
     return run_dir
 
 
@@ -342,6 +427,8 @@ def _runtime_fields(runtime: Any | None) -> dict[str, Any]:
             "api_call_count": 0,
             "routing_call_count": 0,
             "retry_count": 0,
+            "full_page_fallback": None,
+            "layout_issues": [],
         }
     return {
         "elapsed_ms": runtime.elapsed_ms,
@@ -357,13 +444,15 @@ def _runtime_fields(runtime: Any | None) -> dict[str, Any]:
         "api_call_count": runtime.api_call_count,
         "routing_call_count": runtime.routing_call_count,
         "retry_count": runtime.retry_count,
+        "full_page_fallback": getattr(runtime, "full_page_fallback", None),
+        "layout_issues": list(getattr(runtime, "layout_issues", ())),
     }
 
 
 def _write_run_artifacts(
     directory: Path, run: ExtractionRun, document_record: dict[str, Any]
 ) -> None:
-    directory.mkdir(parents=True, exist_ok=False)
+    directory.mkdir(parents=True, exist_ok=True)
     (directory / run.markdown_filename).write_text(run.artifact.markdown, encoding="utf-8")
     (directory / run.json_filename).write_text(run.json_text, encoding="utf-8")
     (directory / run.annotated_pdf_filename).write_bytes(run.annotated_pdf)
@@ -459,6 +548,51 @@ def _report_markdown(report: dict[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def compare_routes(
+    *,
+    gt_dir: Path,
+    source_dir: Path,
+    output_root: Path,
+    suite: str,
+    settings: PipelineConfig,
+    budget_usd: Decimal,
+) -> Path:
+    directory = output_root / (datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ") + "-comparison")
+    directory.mkdir(parents=True, exist_ok=False)
+    # One ledger shared across all three route variants so budget_usd bounds total
+    # spend for the comparison, not each variant independently.
+    ledger = SpendLedger(budget_usd, directory / "spending.json")
+    reports = {}
+    try:
+        for mode in ("baseline", "local_first", "selective"):
+            variant = PipelineConfig.model_validate(settings.model_dump())
+            variant.routing.mode = mode
+            run_dir = run_evaluation(
+                gt_dir=gt_dir,
+                source_dir=source_dir,
+                output_root=directory,
+                suite=suite,
+                settings=variant,
+                budget_usd=budget_usd,
+                shared_ledger=ledger,
+            )
+            reports[mode] = json.loads((run_dir / "report.json").read_text(encoding="utf-8"))
+        comparison = {
+            "schema_version": 1,
+            "spending": ledger.snapshot(),
+            "routes": {
+                name: {"overall": report["overall"], "configuration": report["configuration"]}
+                for name, report in reports.items()
+            },
+            "promotion_passed": False,
+            "note": "Agreement with generated references cannot certify critical-field accuracy.",
+        }
+        (directory / "comparison.json").write_text(_json(comparison), encoding="utf-8")
+    finally:
+        ledger.close()
+    return directory
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Evaluate ADE output against local GroundTruth pairs"
@@ -466,6 +600,10 @@ def main() -> None:
     parser.add_argument("--ground-truth-dir", type=Path, default=Path("data/GroundTruths"))
     parser.add_argument("--source-dir", type=Path, default=Path("data/Original Pdfs"))
     parser.add_argument("--output-root", type=Path, default=Path("evaluation/runs"))
+    parser.add_argument("--config", type=Path)
+    parser.add_argument("--budget-usd", type=Decimal, default=Decimal("10"))
+    parser.add_argument("--resume", type=Path)
+    parser.add_argument("--compare-routes", action="store_true")
     parser.add_argument("--suite", choices=("curated", "full"), default="curated")
     parser.add_argument(
         "--acknowledge-sensitive-output",
@@ -473,17 +611,35 @@ def main() -> None:
         help="Confirm that generated evaluation artifacts may contain sensitive document data.",
     )
     args = parser.parse_args()
+    # Trust boundary: a live run sends real page images to OpenAI and writes them
+    # (and derived metrics) to disk, so this flag cannot default to True.
     if not args.acknowledge_sensitive_output:
         parser.error(
             "--acknowledge-sensitive-output is required because evaluation artifacts "
             "may contain sensitive document data"
         )
     try:
+        if args.compare_routes:
+            if args.resume:
+                raise ValueError("resume applies to individual evaluation runs")
+            result = compare_routes(
+                gt_dir=args.ground_truth_dir,
+                source_dir=args.source_dir,
+                output_root=args.output_root,
+                suite=args.suite,
+                settings=PipelineConfig.from_toml(args.config) if args.config else PipelineConfig(),
+                budget_usd=args.budget_usd,
+            )
+            print(result)
+            return
         result = run_evaluation(
             gt_dir=args.ground_truth_dir,
             source_dir=args.source_dir,
             output_root=args.output_root,
             suite=args.suite,
+            settings=PipelineConfig.from_toml(args.config) if args.config else None,
+            budget_usd=args.budget_usd,
+            resume=args.resume,
         )
     except (OSError, ValueError, RuntimeError) as error:
         print(str(error), file=sys.stderr)

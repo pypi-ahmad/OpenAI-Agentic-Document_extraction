@@ -57,3 +57,5 @@ Use categorical evidence, never invented numeric confidence:
 Do not claim complete or supported when visible content, table structure, reading order, checkbox
 state, or grounding is uncertain. Return only the structured semantic result required by the
 supplied schema.
+
+Uncertainty contract: use checked=null for ambiguous checkbox marks. Never infer false from ambiguity. Preserve visibly blank labeled fields as blank; distinguish unreadable marks with [ILLEGIBLE_TEXT].

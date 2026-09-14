@@ -1,4 +1,11 @@
-"""Render validated page drafts into GroundTruth-compatible artifacts."""
+"""Render validated page drafts into GroundTruth-compatible document artifacts.
+
+Responsible for assembling page extractions into versioned document models (`ExtractionDocumentV3`),
+generating Crockford base32 ULID job IDs, calculating 0-indexed character offsets (`TextRange`),
+and rendering markdown with canonical page-break tags.
+Must NOT call extraction models or mutate box coordinates.
+Next: ade_app.outputs for rendering annotated bounding-box PDFs and ZIP bundles.
+"""
 
 from __future__ import annotations
 
@@ -18,6 +25,8 @@ from ade_app.models import (
     DraftLeaf,
     DraftTable,
     DraftTableCell,
+    ExtractionDocumentV2,
+    ExtractionDocumentV3,
     Grounding,
     GroundTruthDocument,
     LeafElement,
@@ -47,6 +56,7 @@ class PageOutcome:
     source_page: int
     extraction: PageExtraction | None = None
     failure_reason: str | None = None
+    candidate_extraction: PageExtraction | None = None
 
     def __post_init__(self) -> None:
         if self.source_page < 1:
@@ -154,10 +164,14 @@ def render_document(
     return artifact
 
 
-def artifact_json(artifact: GroundTruthDocument) -> str:
+def artifact_json(
+    artifact: GroundTruthDocument | ExtractionDocumentV2 | ExtractionDocumentV3,
+) -> str:
     """Serialize using the observed two-space JSON style and no terminal newline."""
 
-    return artifact.model_dump_json(indent=2, exclude_none=True)
+    return artifact.model_dump_json(
+        indent=2, exclude_none=not isinstance(artifact, ExtractionDocumentV3)
+    )
 
 
 def _page_grounding(page: int, start: int, end: int) -> Grounding:
@@ -350,7 +364,7 @@ def _render_inline(
     item: SemanticText | SemanticCheckbox, *, html_context: bool, heading_context: bool = False
 ) -> str:
     if isinstance(item, SemanticCheckbox):
-        return "[x]" if item.checked else "[ ]"
+        return "[?]" if item.checked is None else "[x]" if item.checked else "[ ]"
     text = escape(item.text, quote=False) if html_context else item.text
     if item.style == "strong" and not heading_context:
         if html_context:

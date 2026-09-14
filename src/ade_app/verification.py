@@ -1,4 +1,10 @@
-"""Non-correcting checks for error-prone identifiers and numeric fields."""
+"""Non-correcting checks for error-prone identifiers and numeric fields.
+
+Responsible for format validation and Luhn checksum checks on sensitive domain identifiers
+(NPI, dates, telephone numbers, ICD-10, CPT codes) to flag extraction anomalies.
+Must NOT alter, normalize, or auto-correct extracted values; emits non-mutating findings only.
+Next: ade_app.quality which incorporates verification findings into quality feature vectors.
+"""
 
 from __future__ import annotations
 

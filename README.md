@@ -1,96 +1,178 @@
 # OpenAI Agentic Document Extraction
 
-Local Streamlit application for extracting scanned PDFs and images into a strict,
-GroundTruth-derived JSON structure and deterministic Markdown. The active pipeline uses
-OpenAI `gpt-5.6-terra` at medium reasoning effort, then sends only low-quality or disagreeing
-segments to `gpt-5.6-sol` at low effort.
+ADE (Agentic Document Extraction) is a local Streamlit application and command-line pipeline that extracts scanned PDFs and images into deterministic Markdown, GroundTruth-compatible v3 JSON, confidence reports, and annotated review PDFs. The pipeline uses PyMuPDF for page rasterization, conditional OpenCV image preprocessing, PP-StructureV3 for local layout analysis, and an in-memory LangGraph state machine orchestrating an OpenAI model cascade (`gpt-5.6-luna` for primary extraction, `gpt-5.6-terra` for segment verification, and `gpt-5.6-sol` for disputed field resolution) with fail-closed confidence thresholds.
 
-> [!IMPORTANT]
-> This project is inspired by agentic document extraction workflows. It does not claim
-> accuracy equivalence with LandingAI. Use the included evaluation workflow to measure results
-> on your own GroundTruth pairs, and review every output marked `review_required`.
+## Requirements
 
-## What it does
+Requirements derived from `pyproject.toml`, `.python-version`, and runtime scripts:
 
-- Upload 1–20 PDF, PNG, JPG, or JPEG files in one batch.
-- Select an inclusive start and end page for each document.
-- Process documents and pages concurrently within fixed limits while preserving page order.
-- Validate structured responses before rendering or packaging them.
-- Produce Markdown, JSON, an annotated PDF, usage details, and a ZIP manifest.
-- Route uncertain segments through independent verification and targeted repair.
-- Compare output with local GroundTruth JSON/Markdown through a reproducible CLI.
-- Load an existing evaluation `report.json` in the sidebar for a local summary and download.
+- **Operating system**: Windows 11 is required for the `launch.cmd` launcher script (uses PowerShell CIM and network connection commands) and the precompiled CUDA 12.9 GPU wheel. Python CLI utilities can run on other platforms using the CPU extra.
+- **Python**: Python `>=3.13.15,<3.14` (`.python-version` specifies `3.13.15`).
+- **Package manager**: [`uv`](https://docs.astral.sh/uv/) (project build backend requires `uv_build>=0.12.7,<0.13.0`).
+- **Accelerator (optional)**: NVIDIA GPU with CUDA 12.9 support for `paddlepaddle-gpu`. A CPU-only fallback is available via the `cpu` extra.
+- **Credentials**: OpenAI API key with access to `gpt-5.6-luna`, `gpt-5.6-terra`, and `gpt-5.6-sol`.
 
-Selected page images and routed review crops are sent to OpenAI. Results remain in server-side
-state associated with the current Streamlit session until Reset, the upload selection changes, or
-the session ends; downloaded files are written only when you choose to save them.
+## Setup and run commands
 
-## Setup and cloning
-
-Repository: <https://github.com/pypi-ahmad/OpenAI-Agentic-Document_extraction>
-
-Requirements: Windows 11, Python 3.14+, [`uv`](https://docs.astral.sh/uv/), and an OpenAI API
-key with access to the configured models.
+### 1. Clone the repository
 
 ```powershell
 git clone https://github.com/pypi-ahmad/OpenAI-Agentic-Document_extraction.git
 cd OpenAI-Agentic-Document_extraction
-$env:OPENAI_API_KEY = "your-key-for-this-shell"
-uv sync --frozen
+```
+
+### 2. Set credentials
+
+Set the OpenAI API key in your terminal session:
+
+```powershell
+$env:OPENAI_API_KEY = "your-api-key"
+```
+
+Alternatively, add `OPENAI_API_KEY = "your-api-key"` to `.streamlit/secrets.toml` (ignored by Git).
+
+### 3. Synchronize dependencies
+
+Choose either the GPU or CPU runtime extra:
+
+- For Windows with NVIDIA GPU (CUDA 12.9):
+  ```powershell
+  uv sync --frozen --extra gpu
+  ```
+- For CPU-only hosts:
+  ```powershell
+  uv sync --frozen --extra cpu
+  ```
+
+### 4. Run the Streamlit web interface
+
+On Windows, use the launcher script:
+
+```powershell
 .\launch.cmd
 ```
 
-Open <http://127.0.0.1:9674>. Upload documents, choose page ranges, and select **Extract
-documents** after confirming the authorization-and-review checkbox. Do not put credentials in
-source files; `.streamlit/secrets.toml` is also supported and ignored by Git.
-
-For the complete first-run walkthrough, see [First extraction](docs/tutorials/first-extraction.md).
-
-## Development checks
+On other platforms, or to run Streamlit directly without port checking:
 
 ```powershell
-uv run --frozen pytest
-uv run --frozen ruff check .
-uv run --frozen ty check
+uv run --no-sync streamlit run streamlit_app.py --server.port 9674 --server.address 127.0.0.1 --server.enableXsrfProtection true
 ```
+
+The application will be accessible at <http://127.0.0.1:9674>.
+
+### 5. Run single-document extraction CLI
+
+Extract a single PDF or image to an output directory:
+
+```powershell
+uv run --no-sync ade-extract .\document.pdf --output-dir .\document.outputs
+```
+
+Exit codes:
+- `0`: Extraction complete and valid.
+- `2`: Extraction produced usable output but requires human review (`partial`).
+- `1`: Extraction failed (`failed`).
+
+### 6. Run evaluation and calibration CLIs
+
+Evaluate extraction accuracy against local GroundTruth pairs:
+
+```powershell
+uv run --no-sync ade-evaluate --acknowledge-sensitive-output --suite curated
+```
+
+Calibrate the segment-quality routing profile:
+
+```powershell
+uv run --no-sync ade-calibrate-quality --suite full
+```
+
+Verify the GroundTruth schema and profile contract:
+
+```powershell
+uv run --no-sync ade-profile --check
+```
+
+## Configuration
+
+### Environment variables
+
+- `OPENAI_API_KEY`: Required string containing the OpenAI API credential (unless provided in `.streamlit/secrets.toml`). Must not contain ASCII control characters or surrounding whitespace.
+- `OPENAI_BASE_URL`: Optional string defining the OpenAI endpoint (defaults to `https://api.openai.com/v1`). If provided, must use HTTPS and point to an official OpenAI API hostname (`api.openai.com` or `*.api.openai.com`).
+- `PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK`: Set to `"True"` by default in `src/ade_app/preprocessing.py` to prevent PaddleX from checking remote model hosts prior to reading local caches.
+
+### Configuration files
+
+- `.streamlit/config.toml`: Configures the Streamlit server port (`9674`), loopback address (`127.0.0.1`), security settings (XSRF protection enabled), maximum upload size (`200 MB`), and UI dark theme.
+- `.streamlit/secrets.toml`: Optional, Git-ignored file to supply `OPENAI_API_KEY`.
+- TOML pipeline configuration (passed to CLI commands via `--config <path>`): Supports overriding defaults for `[models]`, `[imaging]`, `[layout]`, `[routing]`, `[retries]`, `[runtime]`, and `[logging]`.
+
+## Repository map
+
+```text
+streamlit_app.py       Streamlit web interface entry point
+launch.cmd             Windows launcher batch script
+src/ade_app/           Core Python package
+  cli.py               Command-line extraction entry point (ade-extract)
+  evaluation.py        GroundTruth evaluation runner (ade-evaluate)
+  calibration.py       Segment-quality router calibration (ade-calibrate-quality)
+  profile.py           Contract profile verification tool (ade-profile)
+  orchestration/       LangGraph workflow definitions, nodes, and state machines
+  services/            Service boundaries (imaging, layout, validation, confidence)
+  prompts/             Versioned Markdown prompts for OpenAI models
+tests/                 Pytest test suite (unit, integration, governance, link checks)
+docs/                  Project documentation, guides, architecture, and runbooks
+schemas/               JSON schemas for ground truth and artifacts
+profiles/              Calibrated quality and routing profiles
+scripts/               Utility scripts (launch.ps1)
+data/                  Local input documents and GroundTruth pairs (Git-ignored)
+evaluation/            Generated evaluation reports and traces (Git-ignored)
+```
+
+## How to run tests
+
+Execute the test suite using pytest via `uv`:
+
+```powershell
+uv run --no-sync pytest
+```
+
+Run code formatting and style checks:
+
+```powershell
+uv run --no-sync ruff check .
+```
+
+Run static type checking:
+
+```powershell
+uv run --no-sync ty check
+```
+
+## Known limitations
+
+- **In-memory state and crash recovery**: Extraction state and intermediate page images exist in memory only. LangGraph is compiled without a persistent checkpointer; crashed runs cannot resume mid-workflow and must be restarted.
+- **Strict batch constraints**: Multi-document processing in the web UI enforces bounds of at most 20 files, 500 MB total size, 100 pages, 4 concurrent documents, 2 page workers per document, and 4 concurrent OpenAI API calls.
+- **Process-lifetime layout latches**: In `ade_app.layout`, model initialization failure (`_MODEL_FAILURE`) or GPU-to-CPU fallback (`_CPU_LATCHED`) latches for the lifetime of the process and will apply to all subsequent documents until process restart.
+- **Single-threaded Paddle inference**: PP-StructureV3 layout inference is not safe for concurrent multithreaded execution; calls are serialized through a global lock (`_INFERENCE_LOCK`).
+- **Raster pixel budget**: Pages exceeding 20,000,000 pixels or batches exceeding 100,000,000 pixels automatically scale down effective DPI to prevent memory exhaustion.
+- **Cost estimation**: Displayed financial costs are approximations calculated using configured per-million-token rates.
 
 ## Documentation
 
+- [Architecture](docs/ARCHITECTURE.md)
+- [Technical details](docs/TECHNICAL.md)
+- [Operations runbook](docs/RUNBOOK.md)
+- [Contributing](docs/CONTRIBUTING.md)
 - [Documentation map](docs/README.md)
+- [First extraction walkthrough](docs/tutorials/first-extraction.md)
 - [Use the Streamlit app](docs/how-to/use-the-app.md)
 - [Develop and validate changes](docs/how-to/develop-and-test.md)
 - [Evaluate against GroundTruth](docs/how-to/evaluate-groundtruth.md)
-- [Architecture](docs/explanation/architecture.md)
 - [Output contract](docs/reference/output-contract.md)
 - [Configuration and commands](docs/reference/configuration.md)
 - [Python API](docs/reference/python-api.md)
 - [Documentation coverage](docs/reference/documentation-coverage.md)
 - [Troubleshooting](docs/troubleshooting.md)
 - [System card](docs/governance/system-card.md)
-- [Payer governance evidence audit](docs/governance/payer-audit.md)
-- [Business-case evidence memo](docs/governance/business-case.md)
-- [Codebase architecture map](docs/codebase/ARCHITECTURE.md)
-- [Whole-codebase review](docs/reviews/whole-codebase-review.md)
 - [Security policy](SECURITY.md)
-- [Security review](docs/security/SECURITY_REVIEW.md)
-
-## Repository layout
-
-```text
-streamlit_app.py       Streamlit entry point
-src/ade_app/           extraction, validation, rendering, evaluation, and packaging
-src/ade_app/prompts/   versioned Markdown prompts used by model requests
-tests/                 focused unit and integration tests
-docs/                  user and developer documentation
-evaluation/            evaluation notes and generated run directories
-data/                  local source and GroundTruth inputs (Git-ignored)
-profiles/              generated schema and quality profiles (Git-ignored)
-```
-
-## Known boundaries
-
-- OCR accuracy depends on scan quality, model behavior, and calibrated quality thresholds.
-- A valid schema does not prove that every transcribed value is correct.
-- Bounding boxes can be omitted from the annotated PDF when they are not trustworthy.
-- Cost shown by the app is an estimate based on configured per-token rates.
-- The launcher is intended for local Windows use and binds Streamlit to loopback only.

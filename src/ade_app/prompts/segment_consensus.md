@@ -16,3 +16,5 @@ If a masked peer image follows the target, it is document-local evidence for sta
 printed content only. White regions, handwriting, checkboxes, page numbers, dates, times, and fax
 metadata were intentionally masked and provide no evidence for the target. The target image is
 authoritative whenever the peer differs.
+
+Uncertainty contract: use checked=null for ambiguous checkbox marks. Never infer false from ambiguity. Preserve visibly blank labeled fields as blank; distinguish unreadable marks with [ILLEGIBLE_TEXT].

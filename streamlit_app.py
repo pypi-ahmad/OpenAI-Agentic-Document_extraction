@@ -1,4 +1,13 @@
-"""Local OpenAI agentic document extraction app."""
+"""Streamlit UI entry point: authorization gate, upload/page-range form, and result display.
+
+Responsible for collecting and validating operator input (authorization
+acknowledgement, uploaded files, inclusive page ranges) and rendering batch
+results/downloads. Must NOT perform validation, rasterization, or extraction
+itself, and must never log or display the OpenAI credential. Delegates to
+ade_app.inputs (page-range/byte validation), ade_app.raster (rendering), and
+ade_app.batch (bounded concurrent orchestration) — open ade_app/batch.py next
+to follow how a submitted batch is executed.
+"""
 
 from __future__ import annotations
 
@@ -22,18 +31,16 @@ from ade_app.batch import (
     BatchProgress,
     extract_documents,
 )
-from ade_app.constants import DEFAULT_DPI, MODEL_CASCADE, MODEL_ID, QUALITY_PROFILE_PATH
-from ade_app.evaluation import parse_evaluation_report
+from ade_app.config import PipelineConfig
+from ade_app.constants import DEFAULT_DPI, MODEL_CASCADE, MODEL_ID
+from ade_app.hybrid import HybridPageExtractor, routing_fingerprint
 from ade_app.inputs import DocumentInput, parse_page_range
-from ade_app.openai_client import OpenAIPageExtractor, build_responses_parser, resolve_api_key
 from ade_app.pipeline import ExtractionRun
 from ade_app.preview import safe_markdown_preview
-from ade_app.quality import load_quality_profile
 from ade_app.raster import RenderedPage, get_page_count, rasterize_document
+from ade_app.runner import create_extractor
 from ade_app.security import is_loopback_address, public_extraction_error
 from ade_app.session import clear_page_range_state, reset_session_state
-
-PROFILE_PATH = Path("profiles/groundtruth-profile.json")
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,6 +48,7 @@ class _UploadItem:
     item_id: str
     source: DocumentInput
     page_count: int
+
 
 _COPY_BUTTON = st.components.v2.component(
     "output_copy_button",
@@ -75,14 +83,17 @@ def _document_input(upload: UploadedFile) -> DocumentInput:
 
 
 def _upload_item(index: int, upload: UploadedFile) -> _UploadItem:
+    # item_id combines upload order with a content digest so two files with
+    # identical bytes (or a rename) still get distinct, stable widget keys.
     source = _document_input(upload)
     digest = sha256(source.filename.encode("utf-8") + b"\0" + source.data).hexdigest()[:16]
-    return _UploadItem(
-        f"{index}-{digest}", source, _page_count(source.filename, source.data)
-    )
+    return _UploadItem(f"{index}-{digest}", source, _page_count(source.filename, source.data))
 
 
 def _streamlit_api_key() -> str | None:
+    # Credential trust boundary: prefer the environment variable; fall back to
+    # secrets.toml only if unset. The key is returned for immediate use by the
+    # extractor and must never be logged, displayed, or included in an artifact.
     if os.environ.get("OPENAI_API_KEY"):
         return None
     try:
@@ -90,6 +101,12 @@ def _streamlit_api_key() -> str | None:
     except FileNotFoundError:
         return None
     return str(value) if value else None
+
+
+def _document_extractor(api_key: str | None) -> HybridPageExtractor:
+    """Keep document-bearing extractor state within the current extraction run."""
+
+    return create_extractor(api_key=api_key)
 
 
 def _raster_pages(
@@ -137,6 +154,13 @@ def _render_document_result(run_result: ExtractionRun) -> None:
             "JSON",
             run_result.json_text,
             file_name=run_result.json_filename,
+            mime="application/json",
+            icon=":material/download:",
+        )
+        st.download_button(
+            "Confidence",
+            run_result.confidence_text,
+            file_name=run_result.confidence_filename,
             mime="application/json",
             icon=":material/download:",
         )
@@ -190,9 +214,7 @@ def _render_document_result(run_result: ExtractionRun) -> None:
                         "segment": segment.segment_id,
                         "score": segment.final_score,
                         "reasons": ", ".join(segment.reasons),
-                        "models": " → ".join(
-                            attempt.model for attempt in segment.attempts
-                        ),
+                        "models": " → ".join(attempt.model for attempt in segment.attempts),
                     }
                     for page, segment in needs_review
                 ],
@@ -231,9 +253,7 @@ def _render_document_result(run_result: ExtractionRun) -> None:
                     {
                         "model": model,
                         "input": sum(usage.input_tokens for usage in usages),
-                        "cached input": sum(
-                            usage.cached_input_tokens for usage in usages
-                        ),
+                        "cached input": sum(usage.cached_input_tokens for usage in usages),
                         "cache write": sum(usage.cache_write_tokens for usage in usages),
                         "output": sum(usage.output_tokens for usage in usages),
                     }
@@ -246,6 +266,9 @@ st.set_page_config(
     page_icon=":material/document_scanner:",
     layout="wide",
 )
+# Defense-in-depth: scripts/launch.ps1 is expected to bind Streamlit to
+# 127.0.0.1, but this check catches a manual `streamlit run` that skips the
+# launcher and would otherwise expose the app beyond localhost.
 if not is_loopback_address(str(st.get_option("server.address") or "")):
     st.error("For security, this application must listen on a loopback address.")
     st.stop()
@@ -254,7 +277,7 @@ st.session_state.setdefault("batch_run", None)
 st.title("OpenAI agentic document extraction")
 st.caption(
     f"Scanned-document extraction using only `{MODEL_ID}`. "
-    "Output follows the inspected local GroundTruth contract."
+    "Produces structured JSON, Markdown, an annotated PDF, and a confidence report."
 )
 upload_items: list[_UploadItem] = []
 page_ranges: dict[str, tuple[int, int]] = {}
@@ -293,6 +316,9 @@ with st.sidebar:
             st.error("Total upload size may not exceed 500 MB.")
             batch_error = True
 
+    # The upload selection is the source of truth: whenever it changes (files
+    # added/removed/reordered), drop any stale per-file range widget state and
+    # any previous batch result rather than letting them silently carry over.
     fingerprint = "|".join(item.item_id for item in upload_items)
     if st.session_state.get("upload_fingerprint") != fingerprint:
         clear_page_range_state(st.session_state)
@@ -303,6 +329,11 @@ with st.sidebar:
     if upload_items and not batch_error:
         with st.form("extract_documents", border=True):
             st.subheader("Page ranges")
+            retry_failed_fields_with_sol = st.checkbox(
+                "Resolve disputed fields",
+                value=True,
+                help="Use an additional visual read for up to eight disputed fields per document.",
+            )
             for item in upload_items:
                 suffix = "s" if item.page_count != 1 else ""
                 with st.expander(
@@ -335,6 +366,9 @@ with st.sidebar:
                         )
                     )
                     page_ranges[item.item_id] = (start_page, end_page)
+                    # Both bounds are 1-based and inclusive; equal start/end selects
+                    # a single page. Rejected here before ade_app.inputs.parse_page_range
+                    # ever sees the "{start}-{end}" string built from this pair.
                     if start_page > end_page:
                         st.error("Start page must be less than or equal to end page.")
                         batch_error = True
@@ -360,66 +394,6 @@ with st.sidebar:
         st.info(f"Upload 1-{MAX_BATCH_FILES} documents to choose their page ranges.")
 
     st.button("Reset", icon=":material/restart_alt:", on_click=_reset)
-    if PROFILE_PATH.is_file():
-        profile = json.loads(PROFILE_PATH.read_text(encoding="utf-8"))
-        st.caption(
-            f"Development profile: {profile['pair_count']} GroundTruth pairs, "
-            f"{profile['source_page_count']} source pages."
-        )
-    try:
-        quality_profile = load_quality_profile(QUALITY_PROFILE_PATH)
-    except RuntimeError as error:
-        st.error(str(error))
-    else:
-        if quality_profile.routing_mode == "repair_all":
-            st.warning(
-                "Quality calibration currently accepts no primary segments. "
-                "Every segment receives independent verification (`repair_all`)."
-            )
-        else:
-            st.caption("Quality routing: calibrated selective verification.")
-    with st.expander("Evaluation comparison", expanded=False):
-        report_upload = st.file_uploader(
-            "Existing evaluation report",
-            type=["json"],
-            accept_multiple_files=False,
-            max_upload_size=10,
-            key="evaluation_report_upload",
-            help="Displays an existing report.json locally. It does not run extraction.",
-        )
-        if report_upload is not None:
-            report_bytes = report_upload.getvalue()
-            try:
-                report = parse_evaluation_report(report_bytes)
-            except ValueError as error:
-                st.error(str(error))
-            else:
-                overall = report["overall"]
-                valid_json = overall.get("valid_json_rate", 0)
-                markdown_similarity = overall.get("markdown_similarity_micro", 0)
-                if not isinstance(valid_json, int | float):
-                    valid_json = 0
-                if not isinstance(markdown_similarity, int | float):
-                    markdown_similarity = 0
-                st.metric("Valid JSON", f"{float(valid_json):.1%}")
-                st.metric(
-                    "Markdown similarity",
-                    f"{float(markdown_similarity):.1%}",
-                )
-                normalized = overall.get("field_normalized_prf_micro", {})
-                if not isinstance(normalized, dict):
-                    normalized = {}
-                normalized_f1 = normalized.get("f1", 0)
-                if not isinstance(normalized_f1, int | float):
-                    normalized_f1 = 0
-                st.metric("Normalized field F1", f"{float(normalized_f1):.1%}")
-                st.metric("Estimated cost", f"${overall.get('estimated_cost_usd', '0')}")
-                st.download_button(
-                    "Download detailed report",
-                    report_bytes,
-                    file_name="evaluation-report.json",
-                    mime="application/json",
-                )
 
 if submitted and upload_items:
     st.session_state.batch_run = None
@@ -435,13 +409,35 @@ if submitted and upload_items:
             )
             for item in upload_items
         )
-        extractor = OpenAIPageExtractor(
-            build_responses_parser(resolve_api_key(_streamlit_api_key()))
-        )
+        # Cache key covers everything that can change the extraction result:
+        # exact document bytes/pages, routing/config fingerprint, on-disk
+        # calibration profiles, and the retry toggle. Re-submitting the same
+        # form without changing any of these replays the cached run instead
+        # of re-billing the OpenAI API.
+        cache_key = sha256(
+            json.dumps(
+                {
+                    "documents": [
+                        (doc.source.filename, sha256(doc.source.data).hexdigest(), doc.pages)
+                        for doc in documents
+                    ],
+                    "routing": routing_fingerprint(PipelineConfig()),
+                    "profiles": [
+                        (str(path), sha256(path.read_bytes()).hexdigest())
+                        for path in sorted(Path("profiles").glob("*.json"))
+                    ],
+                    "retry_sol": retry_failed_fields_with_sol,
+                },
+                sort_keys=True,
+            ).encode()
+        ).hexdigest()
+        cached = st.session_state.get("extraction_cache")
+        if cached is not None and cached[0] == cache_key:
+            st.session_state.batch_run = cached[1]
+            st.rerun()
+        extractor = _document_extractor(_streamlit_api_key())
         total_pages = sum(len(document.pages) for document in documents)
-        progress_bar = st.progress(
-            0, text=f"0% · 0 completed · 0 failed · {total_pages} total"
-        )
+        progress_bar = st.progress(0, text=f"0% · 0 completed · 0 failed · {total_pages} total")
         with st.status("Processing documents", expanded=True) as extraction_status:
 
             def update_progress(event: BatchProgress) -> None:
@@ -473,12 +469,17 @@ if submitted and upload_items:
                     source.filename, source.data, pages, dpi
                 ),
                 progress=update_progress,
+                retry_failed_fields_with_sol=retry_failed_fields_with_sol,
             )
             extraction_status.update(
                 label="Batch extraction complete", state="complete", expanded=False
             )
         st.session_state.batch_run = batch_run
+        if all(item.run is not None and item.status != "failed" for item in batch_run.files):
+            st.session_state.extraction_cache = (cache_key, batch_run)
     except (RuntimeError, ValueError) as error:
+        # public_extraction_error strips provider/path details from the
+        # message before it reaches the UI; do not surface `error` directly.
         st.error(public_extraction_error(error))
 
 batch_result: BatchExtractionRun | None = st.session_state.batch_run
@@ -504,9 +505,7 @@ if batch_result is not None:
         )
     metric_columns = st.columns(5)
     metric_columns[0].metric("Input tokens", f"{batch_result.usage.input_tokens:,}")
-    metric_columns[1].metric(
-        "Cached input", f"{batch_result.usage.cached_input_tokens:,}"
-    )
+    metric_columns[1].metric("Cached input", f"{batch_result.usage.cached_input_tokens:,}")
     metric_columns[2].metric("Cache write", f"{batch_result.usage.cache_write_tokens:,}")
     metric_columns[3].metric("Output tokens", f"{batch_result.usage.output_tokens:,}")
     metric_columns[4].metric("Estimated cost", f"${batch_result.cost_usd:.6f}")
@@ -524,9 +523,7 @@ if batch_result is not None:
                 "pages": f"{result.selected_pages[0]}-{result.selected_pages[-1]}",
                 "status": result.status,
                 "review required": (
-                    True
-                    if result.run is None
-                    else bool(result.run.manifest["review_required"])
+                    True if result.run is None else bool(result.run.manifest["review_required"])
                 ),
                 "input": result.usage.input_tokens,
                 "cached input": result.usage.cached_input_tokens,

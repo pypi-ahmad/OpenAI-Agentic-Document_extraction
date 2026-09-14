@@ -1,4 +1,15 @@
-"""Recursive source-to-GroundTruth corpus inventory."""
+"""Recursive source-to-GroundTruth corpus inventory.
+
+Responsible for: matching each source PDF to its GroundTruth JSON/Markdown pair
+by exact filename stem, and validating that pairing (readable PDF, valid
+GroundTruth JSON, Markdown/JSON agreement, complete/consistent page ranges)
+before a document is eligible for evaluation or calibration. Must NOT guess a
+mapping when a stem is ambiguous or incomplete — such stems go to
+`CorpusExclusion` and are excluded from metrics rather than paired to the
+wrong GroundTruth. Must NOT write to or otherwise mutate any GroundTruth file.
+See `evaluation.py` and `calibration.py`, the two callers that turn
+`CorpusInventory.documents` into scored samples.
+"""
 
 from __future__ import annotations
 
@@ -68,6 +79,8 @@ def inventory_corpus(gt_dir: Path, source_dir: Path) -> CorpusInventory:
         markdown_matches = markdowns.get(stem, ())
         paths = tuple(sorted((*source_matches, *json_matches, *markdown_matches), key=str))
         counts = (len(source_matches), len(json_matches), len(markdown_matches))
+        # A stem is only mappable when exactly one of each file exists; zero of any
+        # kind or more than one of any kind is excluded rather than paired by guess.
         if counts != (1, 1, 1):
             reason = "ambiguous_mapping" if any(count > 1 for count in counts) else "mapping_gap"
             exclusions.append(
@@ -128,6 +141,8 @@ def inventory_corpus(gt_dir: Path, source_dir: Path) -> CorpusInventory:
                 )
             )
             continue
+        # Contract check: the standalone .parse.md file must be byte-identical to
+        # the JSON's own markdown field, or the pair is not a trustworthy GroundTruth.
         if markdown != groundtruth.markdown:
             exclusions.append(
                 CorpusExclusion(

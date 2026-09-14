@@ -1,4 +1,11 @@
-"""Deterministic, content-safe provenance helpers for extraction manifests."""
+"""Deterministic, content-safe provenance helpers for extraction manifests.
+
+Responsible for computing SHA-256 digests of inputs, prompts, and outputs, tracking
+model versions, recording timing/cost metrics, and building strict JSON schema manifests
+(`MANIFEST_SCHEMA_VERSION = 9`).
+Must NOT include unredacted raw document text or API credentials in manifest payloads.
+Next: ade_app.pipeline where build_manifest is invoked to generate extraction run provenance.
+"""
 
 from __future__ import annotations
 
@@ -16,7 +23,7 @@ from ade_app.constants import DEFAULT_DPI, QUALITY_PROFILE_PATH
 from ade_app.inputs import DocumentInput
 from ade_app.raster import RenderedPage
 
-MANIFEST_SCHEMA_VERSION = 6
+MANIFEST_SCHEMA_VERSION = 9
 Sha256 = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")]
 ReviewState = Literal["not_required", "required_unresolved", "failed"]
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -34,7 +41,7 @@ class StrictManifestModel(BaseModel):
 
 
 class GovernanceManifestFields(StrictManifestModel):
-    manifest_schema_version: Literal[6]
+    manifest_schema_version: Literal[8, 9]
     governance_policy_version: str
     intended_use: str
     data_classification: str
@@ -113,7 +120,7 @@ class SegmentAttemptManifest(StrictManifestModel):
     response_id: str
     request_id: str
     failure_reason: str | None
-    stage: Literal["primary", "independent_consensus", "field_resolution"]
+    stage: Literal["primary", "independent_consensus", "field_resolution", "semantic_verification"]
     peer_source_page: int | None = Field(default=None, ge=1)
     disagreement_count: int = Field(ge=0)
     batch_index: int | None = Field(default=None, ge=0)
@@ -139,12 +146,11 @@ class SegmentManifest(StrictManifestModel):
     segment_id: str
     segment_index: int = Field(ge=0)
     final_score: float = Field(ge=0, le=100)
-    status: Literal[
-        "accepted_quality", "accepted_consensus", "accepted_resolution", "needs_review"
-    ]
+    status: Literal["accepted_quality", "accepted_consensus", "accepted_resolution", "needs_review"]
     reasons: list[str]
     structural_conflicts: list[str]
     unresolved_fields: list[str]
+    final_route: Literal["local_text", "local_table", "luna", "terra", "sol"]
     attempts: list[SegmentAttemptManifest]
 
 
@@ -167,6 +173,8 @@ class PageManifest(StrictManifestModel):
     response_id: str
     request_id: str
     models_used: list[str]
+    full_page_fallback: bool | None = None
+    layout_issues: list[str] = Field(default_factory=list)
     usage_by_model: dict[str, ModelUsageManifest]
     segments: list[SegmentManifest]
 
@@ -207,6 +215,19 @@ class ArtifactHashManifest(StrictManifestModel):
     annotated_pdf_sha256: Sha256
 
 
+class PreprocessingManifest(StrictManifestModel):
+    renderer: Literal["PyMuPDF"]
+    opencv_version: Literal["5.0.0"]
+    conditional_transforms: list[Literal["rotation", "deskew", "denoise", "contrast"]]
+
+
+class RoutingManifest(StrictManifestModel):
+    layout_engine: Literal["PP-StructureV3"]
+    form_detection: Literal["OpenCV geometry + Terra semantics"]
+    policy: Literal["calibrated_fail_closed"]
+    full_page_fallback_count: int = Field(ge=0)
+
+
 class DocumentManifest(DocumentProvenanceFields):
     source_filename: str
     selected_pages: list[int]
@@ -223,6 +244,10 @@ class DocumentManifest(DocumentProvenanceFields):
     review_required: bool
     review_state: ReviewState
     needs_review_segment_count: int = Field(ge=0)
+    needs_review_field_count: int = Field(ge=0)
+    artifact_schema_version: Literal[2, 3]
+    preprocessing: PreprocessingManifest
+    routing: RoutingManifest
     usage: TokenUsageManifest
     estimated_cost_usd: str
     api_call_count: int = Field(ge=0)
@@ -238,8 +263,21 @@ class DocumentManifest(DocumentProvenanceFields):
         page_numbers = [page.source_page for page in self.pages]
         if page_numbers != self.selected_pages:
             raise ValueError("manifest pages must match selected_pages in order")
-        if [page.source_page for page in self.rendered_pages] != self.selected_pages:
-            raise ValueError("rendered_pages must match selected_pages in order")
+        rendered_numbers = [page.source_page for page in self.rendered_pages]
+        rendered_number_set = set(rendered_numbers)
+        expected_rendered_order = [
+            page for page in self.selected_pages if page in rendered_number_set
+        ]
+        if rendered_numbers != expected_rendered_order:
+            raise ValueError("rendered_pages must be an ordered subset of selected_pages")
+        missing_renders = set(self.selected_pages) - rendered_number_set
+        if any(
+            page.source_page in missing_renders and page.status != "failed" for page in self.pages
+        ):
+            raise ValueError("pages without rendered images must be failed")
+        expected_artifact_version = 2 if self.manifest_schema_version == 8 else 3
+        if self.artifact_schema_version != expected_artifact_version:
+            raise ValueError("artifact_schema_version does not match manifest version")
         failed_pages = sum(page.status == "failed" for page in self.pages)
         if self.failed_page_count != failed_pages:
             raise ValueError("failed_page_count does not match pages")
@@ -250,7 +288,12 @@ class DocumentManifest(DocumentProvenanceFields):
         )
         if self.needs_review_segment_count != unresolved:
             raise ValueError("needs_review_segment_count does not match segments")
-        expected_state = review_state(failed_pages=failed_pages, unresolved_segments=unresolved)
+        expected_state = review_state(
+            failed_pages=failed_pages,
+            unresolved_segments=unresolved
+            + self.needs_review_field_count
+            + (len(self.annotation_limitations) if self.manifest_schema_version >= 9 else 0),
+        )
         if self.review_state != expected_state:
             raise ValueError("review_state does not match page and segment outcomes")
         if self.review_required != (expected_state != "not_required"):

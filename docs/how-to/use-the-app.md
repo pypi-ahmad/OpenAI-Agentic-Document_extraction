@@ -2,7 +2,7 @@
 
 ## Process multiple documents
 
-1. Run `.\launch.cmd` from the repository root.
+1. After syncing the CPU or GPU runtime, run `.\launch.cmd` from the repository root.
 2. Upload up to 20 supported files in the sidebar.
 3. Choose an inclusive start and end page for each PDF.
 4. Keep the batch at or below 100 selected pages and 500 MB total.
@@ -29,14 +29,15 @@ Never interpret a partial or review-required result as complete without checking
 Select a document in **View document**, then use:
 
 - **Markdown** for rendered reading order and tables;
-- **JSON** for the strict GroundTruth-compatible artifact;
+- **JSON** for the versioned v3 extraction artifact with fields and evidence;
 - **Annotated PDF** for element boxes that could be located reliably;
 - **Usage** for page/segment status, API/routing/retry counts, all token classes, latency, and cost.
 
 The Copy control copies the corresponding existing Markdown or JSON output. It does not create a
 second representation.
 
-Document downloads are `<name>.parse.md`, `<name>.parse.json`, `<name>.annotated.pdf`, and an
+Document downloads are `<name>.parse.md`, `<name>.parse.json`, `<name>.confidence.json`,
+`<name>.annotated.pdf`, and an
 **All outputs** ZIP containing those files plus `manifest.json`. The batch ZIP uses one folder per
 document and adds `batch-manifest.json`. A fully failed document has no fabricated output files;
 its failure is recorded in the batch manifest.
@@ -45,12 +46,6 @@ its failure is recorded in the batch manifest.
 
 Select **Reset** to clear upload widget state, page ranges, results, progress, and usage for the
 current Streamlit session. Reset does not delete local files, GroundTruths, or evaluation runs.
-
-## Inspect an existing evaluation report
-
-Open **Evaluation comparison** in the sidebar and upload a generated `report.json`. The app
-validates and summarizes that local report and offers it for download. This view never starts an
-evaluation or makes an OpenAI request.
 
 ## Handle sensitive documents
 
