@@ -1,7 +1,7 @@
 """Narrow OpenAI Responses API client wrapper for page extraction.
 
-Responsible for dispatching structured prompt requests to the OpenAI model cascade
-(Luna/Terra/Sol), enforcing process-wide API concurrency limits
+Responsible for dispatching structured prompt requests to the single OpenAI model
+(GPT-6 Sol), enforcing process-wide API concurrency limits
 (`MAX_CONCURRENT_RESPONSES = 4`), parsing structured responses, and managing
 prompt template digests.
 Must NOT persist API keys, store unredacted prompts to disk, or bypass the concurrency semaphore.
@@ -85,12 +85,12 @@ _RESPONSES_SEMAPHORE = BoundedSemaphore(MAX_CONCURRENT_RESPONSES)
 logger = logging.getLogger(__name__)
 
 
-def _luna_can_stop(
+def _primary_can_stop(
     element: Any,
     features: tuple[float, ...],
     reasons: tuple[str, ...],
 ) -> bool:
-    """Accept only clean printed Luna evidence at the locked 90% threshold."""
+    """Accept only clean printed primary evidence at the locked 90% threshold."""
 
     if reasons or min(features, default=0.0) < 0.9:
         return False
@@ -130,10 +130,10 @@ FIELD_RESOLUTION_MAX_OUTPUT_TOKENS = 4_000
 MAX_ESCALATED_SEGMENTS_PER_PAGE = 16
 REGION_BATCH_SIZE = 4
 REGION_MAX_OUTPUT_TOKENS = 16_000
-LUNA_LAYOUT_THRESHOLD = 90.0
-SOL_CONFIDENCE_THRESHOLD = 75.0
+PRIMARY_LAYOUT_THRESHOLD = 90.0
+REPAIR_CONFIDENCE_THRESHOLD = 75.0
 
-SemanticRoute = Literal["local_text", "local_table", "luna", "terra", "sol"]
+SemanticRoute = Literal["local_text", "local_table", "primary", "verification", "repair"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -207,7 +207,7 @@ class SegmentRecord:
     attempts: tuple[SegmentAttempt, ...]
     structural_conflicts: tuple[str, ...] = ()
     unresolved_fields: tuple[str, ...] = ()
-    final_route: str = "terra"
+    final_route: str = "verification"
 
 
 @dataclass(frozen=True, slots=True)
@@ -228,6 +228,7 @@ class PageResponse:
     candidate_extraction: PageExtraction | None = None
     full_page_fallback: bool | None = None
     layout_issues: tuple[str, ...] = ()
+    draft_extraction: PageExtraction | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -354,20 +355,20 @@ class OpenAIPageExtractor:
         self._read_cache: dict[
             tuple[str, str], tuple[SemanticSegmentPatch, TokenUsage, str, str, str, int]
         ] = {}
-        self._sol_counts: dict[str, int] = {}
+        self._repair_counts: dict[str, int] = {}
         self.calibrated_routes: set[str] = set()
         self._retry_policy = RetryPolicy(self._config.retries)
         self._primary_model = (
-            self._config.models.luna.name,
-            self._config.models.luna.reasoning_effort,
+            self._config.model.name,
+            self._config.model.reasoning_effort,
         )
         self._verification_model = (
-            self._config.models.terra.name,
-            self._config.models.terra.reasoning_effort,
+            self._config.model.name,
+            self._config.model.reasoning_effort,
         )
         self._repair_model = (
-            self._config.models.sol.name,
-            self._config.models.sol.reasoning_effort,
+            self._config.model.name,
+            self._config.model.reasoning_effort,
         )
         self._responses = responses
         self._profile = profile
@@ -410,16 +411,16 @@ class OpenAIPageExtractor:
 
     def end_document(self, job_id: str) -> None:
         with self._state_lock:
-            self._sol_counts.pop(job_id, None)
+            self._repair_counts.pop(job_id, None)
             for key in tuple(self._read_cache):
                 if key[0] == job_id:
                     self._read_cache.pop(key, None)
 
-    def _claim_sol_fields(self, job_id: str, count: int) -> int:
+    def _claim_repair_fields(self, job_id: str, count: int) -> int:
         with self._state_lock:
-            used = self._sol_counts.get(job_id, 0)
-            claimed = min(count, max(0, self._config.routing.max_sol_fields_per_document - used))
-            self._sol_counts[job_id] = used + claimed
+            used = self._repair_counts.get(job_id, 0)
+            claimed = min(count, max(0, self._config.routing.max_repair_fields_per_document - used))
+            self._repair_counts[job_id] = used + claimed
             return claimed
 
     def extract(self, page: RenderedPage, *, job_id: str, page_count: int) -> PageResponse:
@@ -435,13 +436,16 @@ class OpenAIPageExtractor:
         *,
         job_id: str,
     ) -> PostProcessingResult:
-        """Repair at most eight conflicting or locally-invalid fields with Sol."""
+        """Repair at most eight conflicting or locally-invalid fields with GPT-6 Sol."""
+
+        if not self._config.stages.repair:
+            return PostProcessingResult({}, TokenUsage(), 0, 0)
 
         by_page = {page.source_page: page for page in pages}
         resolutions: dict[str, tuple[str | bool, float]] = {}
         total_usage = TokenUsage()
         calls = retries = 0
-        fields = fields[: self._claim_sol_fields(job_id, len(fields))]
+        fields = fields[: self._claim_repair_fields(job_id, len(fields))]
         for start in range(0, len(fields), 4):
             batch = fields[start : start + 4]
             content: list[dict[str, str]] = []
@@ -521,7 +525,7 @@ class OpenAIPageExtractor:
         self, page: RenderedPage, *, job_id: str, page_count: int
     ) -> PrimaryPageResponse:
         if self._profile is None:
-            raise RuntimeError("A calibrated quality profile is required for Terra extraction")
+            raise RuntimeError("A calibrated quality profile is required for GPT-6 Sol extraction")
         attempts = 0
         failed_usage = TokenUsage()
         state: _ExtractionState | None = None
@@ -576,12 +580,17 @@ class OpenAIPageExtractor:
         *,
         job_id: str,
         peers: dict[str, PeerEvidence] | None = None,
-        allow_sol: bool = True,
+        allow_repair: bool = True,
     ) -> PageResponse:
         """Independently reread low-quality segments and resolve only disputed fields."""
 
         if self._profile is None:
             raise RuntimeError("quality profile is unavailable")
+        allow_repair = allow_repair and self._config.stages.repair
+        draft_extraction = PageExtraction(
+            markdown=primary.state.rendered.markdown,
+            children=primary.state.rendered.children,
+        ).model_copy(deep=True)
         peers = peers or {}
         state = primary.state
         usage_by_model = dict(primary.usage_by_model) or (
@@ -640,9 +649,18 @@ class OpenAIPageExtractor:
             if not automatic:
                 failing.append(index)
 
-        limit = self._config.routing.max_escalated_segments_per_page
+        limit = (
+            self._config.routing.max_escalated_segments_per_page
+            if self._config.stages.verification
+            else 0
+        )
         for index in failing[limit:]:
-            reasons[index] = tuple((*reasons[index], "repair_budget_exhausted"))
+            reason = (
+                "repair_budget_exhausted"
+                if self._config.stages.verification
+                else "verification_disabled"
+            )
+            reasons[index] = tuple((*reasons[index], reason))
 
         for batch_index, index in enumerate(failing[:limit], 1):
             segment_id = f"p{page.source_page}-s{index}"
@@ -731,13 +749,13 @@ class OpenAIPageExtractor:
                 statuses[index] = "accepted_consensus"
                 reasons[index] = (*reasons[index], "visual_confirmation_agreed")
                 continue
-            if not allow_sol:
+            if not allow_repair:
                 unresolved_by_index[index] = tuple(
                     disagreement.field_id for disagreement in comparison.disagreements
                 )
                 reasons[index] = tuple((*reasons[index], "field_visual_disagreement"))
                 continue
-            allowed = self._claim_sol_fields(job_id, len(comparison.disagreements))
+            allowed = self._claim_repair_fields(job_id, len(comparison.disagreements))
             if allowed == 0:
                 unresolved_by_index[index] = tuple(d.field_id for d in comparison.disagreements)
                 reasons[index] = (*reasons[index], "repair_budget_exhausted")
@@ -746,11 +764,11 @@ class OpenAIPageExtractor:
             try:
                 (
                     resolutions,
-                    sol_usage,
-                    sol_response_id,
-                    sol_request_id,
-                    sol_tier,
-                    sol_call_count,
+                    repair_usage,
+                    repair_response_id,
+                    repair_request_id,
+                    repair_tier,
+                    repair_call_count,
                 ) = self._resolve_fields(
                     page,
                     segment_id,
@@ -766,11 +784,11 @@ class OpenAIPageExtractor:
                 )
                 candidate = _replace_element(state, index, resolved)
             except (OpenAIError, ValueError) as error:
-                sol_call_count = int(getattr(error, "attempts", 1))
-                sol_retries = int(getattr(error, "retry_count", max(sol_call_count - 1, 0)))
-                api_call_count += sol_call_count
-                routing_call_count += sol_call_count
-                retry_count += sol_retries
+                repair_call_count = int(getattr(error, "attempts", 1))
+                repair_retries = int(getattr(error, "retry_count", max(repair_call_count - 1, 0)))
+                api_call_count += repair_call_count
+                routing_call_count += repair_call_count
+                retry_count += repair_retries
                 failed_usage = getattr(error, "usage", TokenUsage())
                 usage_by_model[self._repair_model[0]] = (
                     usage_by_model.get(self._repair_model[0], TokenUsage()) + failed_usage
@@ -786,19 +804,19 @@ class OpenAIPageExtractor:
                         stage="field_resolution",
                         disagreement_count=len(comparison.disagreements),
                         batch_index=batch_index,
-                        api_call_count=sol_call_count,
-                        retry_count=sol_retries,
+                        api_call_count=repair_call_count,
+                        retry_count=repair_retries,
                     )
                 )
                 reasons[index] = tuple((*reasons[index], "field_resolution_failure"))
                 continue
-            api_call_count += sol_call_count
-            routing_call_count += sol_call_count
-            retry_count += max(sol_call_count - 1, 0)
+            api_call_count += repair_call_count
+            routing_call_count += repair_call_count
+            retry_count += max(repair_call_count - 1, 0)
             usage_by_model[self._repair_model[0]] = (
-                usage_by_model.get(self._repair_model[0], TokenUsage()) + sol_usage
+                usage_by_model.get(self._repair_model[0], TokenUsage()) + repair_usage
             )
-            if sol_tier == "priority":
+            if repair_tier == "priority":
                 service_tier = "priority"
             accepted = not unresolved
             segment_attempts[index].append(
@@ -807,14 +825,14 @@ class OpenAIPageExtractor:
                     self._repair_model[1],
                     scores[index],
                     accepted,
-                    sol_usage,
-                    sol_response_id,
-                    sol_request_id,
+                    repair_usage,
+                    repair_response_id,
+                    repair_request_id,
                     stage="field_resolution",
                     disagreement_count=len(comparison.disagreements),
                     batch_index=batch_index,
-                    api_call_count=sol_call_count,
-                    retry_count=max(sol_call_count - 1, 0),
+                    api_call_count=repair_call_count,
+                    retry_count=max(repair_call_count - 1, 0),
                 )
             )
             state = candidate
@@ -888,11 +906,7 @@ class OpenAIPageExtractor:
         total_usage = TokenUsage()
         for usage in usage_by_model.values():
             total_usage += usage
-        models_used = tuple(
-            model
-            for model, _ in (self._primary_model, self._verification_model, self._repair_model)
-            if model in usage_by_model
-        )
+        models_used = tuple(usage_by_model)
         return PageResponse(
             extraction=PageExtraction(
                 markdown=state.rendered.markdown,
@@ -905,6 +919,7 @@ class OpenAIPageExtractor:
             range_repairs=0,
             attempts=api_call_count,
             usage_by_model=tuple((model, usage_by_model[model]) for model in models_used),
+            draft_extraction=draft_extraction,
             segments=tuple(records),
             models_used=models_used,
             api_call_count=api_call_count,
@@ -926,7 +941,7 @@ class OpenAIPageExtractor:
         """Extract complete layout regions in model-homogeneous batches."""
 
         inputs = _region_inputs(
-            analysis, self._config.routing.luna_layout_threshold_percent, self.calibrated_routes
+            analysis, self._config.routing.primary_layout_threshold_percent, self.calibrated_routes
         )
         if not inputs:
             raise ValueError("layout analysis returned no semantic regions")
@@ -939,8 +954,8 @@ class OpenAIPageExtractor:
 
         try:
             for route, model in (
-                ("luna", self._primary_model),
-                ("terra", self._verification_model),
+                ("primary", self._primary_model),
+                ("verification", self._verification_model),
             ):
                 routed = [item for item in inputs if item.route == route]
                 for start in range(0, len(routed), REGION_BATCH_SIZE):
@@ -1019,7 +1034,7 @@ class OpenAIPageExtractor:
                         {**patch.audit.model_dump(), "segment_index": index}
                     )
                     model, effort = (
-                        self._primary_model if item.route == "luna" else self._verification_model
+                        self._primary_model if item.route == "primary" else self._verification_model
                     )
                 children.append(element)
                 audits.append(audit)
@@ -1070,10 +1085,10 @@ class OpenAIPageExtractor:
         primary: PrimaryPageResponse,
         *,
         job_id: str,
-        allow_sol: bool = True,
+        allow_repair: bool = True,
     ) -> PageResponse:
         """Verify normalized page-space regions with the common field-level policy."""
-        return self.finalize(prepared.original, primary, job_id=job_id, allow_sol=allow_sol)
+        return self.finalize(prepared.original, primary, job_id=job_id, allow_repair=allow_repair)
 
     def _read_region_items(
         self,
@@ -1218,7 +1233,7 @@ class OpenAIPageExtractor:
     def extract_for_calibration(
         self, page: RenderedPage, *, job_id: str, page_count: int
     ) -> tuple[AuditedPageExtraction, TokenUsage]:
-        """Run only the fixed Terra/medium verification stage for calibration."""
+        """Run only the fixed GPT-6 Sol/medium verification stage for calibration."""
 
         result = self._extract_once(
             page,
@@ -1451,7 +1466,7 @@ class OpenAIPageExtractor:
         batch_index: int,
         context_box: Box | None = None,
     ) -> tuple[SemanticFieldResolutionBatch, TokenUsage, str, str, str, int]:
-        """Ask Sol to resolve only independently-disputed fields from their image regions."""
+        """Ask GPT-6 Sol to resolve only independently-disputed fields from their image regions."""
 
         content: list[dict[str, str]] = []
         if context_box is not None:
@@ -1555,19 +1570,19 @@ def _replace_element(state: _ExtractionState, index: int, element: Any) -> _Extr
 
 def _legacy_route(source_model: str, status: str, primary_model: str = PRIMARY_MODEL[0]) -> str:
     if status == "accepted_resolution":
-        return "sol"
+        return "repair"
     if status == "accepted_consensus":
-        return "terra"
+        return "verification"
     if source_model == primary_model:
-        return "luna"
+        return "primary"
     if source_model == "PP-StructureV3":
         return "local_text"
-    return "terra"
+    return "verification"
 
 
 def _region_inputs(
     analysis: LayoutAnalysis,
-    luna_threshold_percent: float = 90.0,
+    primary_threshold_percent: float = 90.0,
     calibrated_routes: set[str] | None = None,
 ) -> list[RegionInput]:
     items: list[RegionInput] = []
@@ -1597,9 +1612,9 @@ def _region_inputs(
             if local_table
             else "local_text"
             if category == "text" and region.text and "local_text" in (calibrated_routes or set())
-            else "luna"
-            if category == "text" and region.confidence * 100 >= luna_threshold_percent
-            else "terra"
+            else "primary"
+            if category == "text" and region.confidence * 100 >= primary_threshold_percent
+            else "verification"
         )
         items.append(
             RegionInput(
@@ -1627,7 +1642,7 @@ def _region_inputs(
                 prepared_box=proposal.prepared_box,
                 original_box=proposal.box,
                 ocr_context="",
-                route="terra",
+                route="verification",
             )
         )
     return sorted(items, key=lambda item: (item.original_box.ymin, item.original_box.xmin))

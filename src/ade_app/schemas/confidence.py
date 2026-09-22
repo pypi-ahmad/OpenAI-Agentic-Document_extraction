@@ -31,7 +31,7 @@ class FieldConfidence(StrictModel):
     review_reasons: list[str]
     selected_value: str | bool | None
     evidence_pages: list[int]
-    evidence_routes: list[Literal["local_text", "local_table", "luna", "terra", "sol"]]
+    evidence_routes: list[Literal["local_text", "local_table", "primary", "verification", "repair"]]
     validation_checks: list[str]
 
 
@@ -76,7 +76,7 @@ class LegacyFieldConfidence(StrictModel):
     review_reasons: list[str]
     selected_value: str | bool
     evidence_pages: list[int]
-    evidence_routes: list[Literal["local_text", "local_table", "luna", "terra", "sol"]]
+    evidence_routes: list[Literal["local_text", "local_table", "primary", "verification", "repair"]]
     validation_checks: list[str]
 
 

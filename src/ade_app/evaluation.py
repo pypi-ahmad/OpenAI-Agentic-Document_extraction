@@ -178,11 +178,9 @@ def run_evaluation(
             sample.stem: [_sha256(sample.source), _sha256(sample.groundtruth_json)]
             for sample in samples
         },
-        "model": settings.models.luna.name,
-        "model_cascade": [
-            {"model": model.name, "reasoning_effort": model.reasoning_effort}
-            for model in (settings.models.luna, settings.models.terra, settings.models.sol)
-        ],
+        "model": settings.model.name,
+        "reasoning_effort": settings.model.reasoning_effort,
+        "stages": settings.stages.model_dump(),
         "endpoint": "/v1/responses",
         "dpi": settings.imaging.dpi,
         "max_workers": settings.runtime.max_page_workers,
@@ -247,7 +245,7 @@ def run_evaluation(
                 max_workers=settings.runtime.max_page_workers,
                 dpi=settings.imaging.dpi,
                 config=settings,
-                retry_failed_fields_with_sol=True,
+                retry_failed_fields=settings.stages.repair,
                 max_graph_retries=settings.retries.graph_max_page_retries,
                 progress=lambda completed, failed, total, page, status: print(
                     f"  {completed}/{total} pages; page={page}; status={status}; failed={failed}",
@@ -557,40 +555,9 @@ def compare_routes(
     settings: PipelineConfig,
     budget_usd: Decimal,
 ) -> Path:
-    directory = output_root / (datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ") + "-comparison")
-    directory.mkdir(parents=True, exist_ok=False)
-    # One ledger shared across all three route variants so budget_usd bounds total
-    # spend for the comparison, not each variant independently.
-    ledger = SpendLedger(budget_usd, directory / "spending.json")
-    reports = {}
-    try:
-        for mode in ("baseline", "local_first", "selective"):
-            variant = PipelineConfig.model_validate(settings.model_dump())
-            variant.routing.mode = mode
-            run_dir = run_evaluation(
-                gt_dir=gt_dir,
-                source_dir=source_dir,
-                output_root=directory,
-                suite=suite,
-                settings=variant,
-                budget_usd=budget_usd,
-                shared_ledger=ledger,
-            )
-            reports[mode] = json.loads((run_dir / "report.json").read_text(encoding="utf-8"))
-        comparison = {
-            "schema_version": 1,
-            "spending": ledger.snapshot(),
-            "routes": {
-                name: {"overall": report["overall"], "configuration": report["configuration"]}
-                for name, report in reports.items()
-            },
-            "promotion_passed": False,
-            "note": "Agreement with generated references cannot certify critical-field accuracy.",
-        }
-        (directory / "comparison.json").write_text(_json(comparison), encoding="utf-8")
-    finally:
-        ledger.close()
-    return directory
+    raise ValueError(
+        "Legacy route comparisons were removed; evaluate [stages] configurations instead"
+    )
 
 
 def main() -> None:

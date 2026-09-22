@@ -26,7 +26,7 @@ def test_preprocessing_failure_retains_original_render(monkeypatch) -> None:
         lambda rendered: (_ for _ in ()).throw(RuntimeError("orientation failed")),
     )
     operations = _DocumentWorkflowOperations(
-        Mock(), max_workers=1, retry_failed_fields_with_sol=False, config=PipelineConfig()
+        Mock(), max_workers=1, retry_failed_fields=False, config=PipelineConfig()
     )
 
     result = operations.ingest_preprocess(request)
@@ -52,11 +52,11 @@ class OutOfOrderExtractor:
             range_repairs=0,
             usage_by_model=(
                 (
-                    "gpt-5.6-terra",
+                    "gpt-6-sol",
                     TokenUsage(input_tokens=10, cached_input_tokens=2, output_tokens=3),
                 ),
             ),
-            models_used=("gpt-5.6-terra",),
+            models_used=("gpt-6-sol",),
         )
 
 
@@ -90,14 +90,14 @@ def test_concurrent_results_are_aggregated_in_requested_order(sample_page) -> No
     assert [record.source_page for record in run.pages] == [1, 2, 3]
     assert [page.grounding.page for page in run.artifact.structure.children] == [1, 2, 3]
     assert run.usage.input_tokens == 30
-    assert run.artifact.metadata.model_version == "gpt-5.6-terra"
+    assert run.artifact.metadata.model_version == "gpt-6-sol"
     assert all(record.elapsed_ms >= 0 for record in run.pages)
     assert set(run.manifest["pages"][0]) >= {"elapsed_ms", "failure_reason"}
     assert run.manifest["job_id"] == run.artifact.metadata.job_id
     assert run.manifest["model_provider"] == "OpenAI"
     assert run.manifest["endpoint"] == "/v1/responses"
     assert run.manifest["provider_response_storage"] is False
-    assert run.manifest["manifest_schema_version"] == 9
+    assert run.manifest["manifest_schema_version"] == 10
     assert run.artifact.schema_version == 3
     assert run.manifest["canonical_markdown_trusted"] is False
     assert run.manifest["evaluation_artifacts_sensitive"] is True
@@ -129,7 +129,7 @@ def test_failed_structured_response_usage_is_included_in_run_cost() -> None:
         def extract(self, page, *, job_id: str, page_count: int) -> PageResponse:
             del page, job_id, page_count
             usage = TokenUsage(input_tokens=100, cached_input_tokens=10, output_tokens=20)
-            raise StructuredOutputError(2, (("gpt-5.6-terra", usage),))
+            raise StructuredOutputError(2, (("gpt-6-sol", usage),))
 
     source = DocumentInput("sample.pdf", _three_page_pdf())
     pixmap = pymupdf.Pixmap(pymupdf.csRGB, pymupdf.IRect(0, 0, 10, 10), False)

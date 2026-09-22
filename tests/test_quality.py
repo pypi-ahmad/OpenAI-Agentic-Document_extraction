@@ -82,7 +82,7 @@ def test_calibration_fails_closed_when_no_safe_positive_coverage_exists() -> Non
     profile = fit_quality_profile(samples, prompt_hashes={}, groundtruth_hashes={})
 
     assert profile.profile_version == 4
-    assert profile.model_id == "gpt-5.6-terra"
+    assert profile.model_id == "gpt-6-sol"
     assert profile.reasoning_effort == "medium"
     assert profile.raw_decision_boundary == 100.0
     assert profile.validation["accepted_count"] == 0

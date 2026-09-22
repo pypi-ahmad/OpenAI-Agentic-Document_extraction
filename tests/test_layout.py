@@ -77,7 +77,7 @@ def test_uncalibrated_local_route_fails_closed_to_terra() -> None:
 
     decision = decide_routes(analysis, set())
 
-    assert decision.use_full_page_terra
+    assert decision.use_full_page_model
     assert decision.reason == "uncalibrated_routes:local_text"
 
 
@@ -97,7 +97,7 @@ def test_calibrated_local_route_can_avoid_full_page_terra() -> None:
         proposals=[],
     )
 
-    assert not decide_routes(analysis, {"local_text"}).use_full_page_terra
+    assert not decide_routes(analysis, {"local_text"}).use_full_page_model
 
 
 def test_partial_layout_fails_closed_to_model_cascade() -> None:
@@ -119,7 +119,7 @@ def test_partial_layout_fails_closed_to_model_cascade() -> None:
 
     decision = decide_routes(analysis, {"local_text", "local_table"})
 
-    assert decision.use_full_page_terra
+    assert decision.use_full_page_model
     assert decision.reason == "layout_unavailable:model_unavailable"
 
 
@@ -135,7 +135,7 @@ def test_crop_pixels_remain_in_memory_but_are_excluded_from_json() -> None:
         kind="handwritten_text",
         confidence=0.8,
         box=Box(xmin=0, ymin=0, xmax=1, ymax=1),
-        route="terra",
+        route="verification",
         crop=crop,
     )
 

@@ -103,10 +103,10 @@ def _streamlit_api_key() -> str | None:
     return str(value) if value else None
 
 
-def _document_extractor(api_key: str | None) -> HybridPageExtractor:
+def _document_extractor(api_key: str | None, config: PipelineConfig) -> HybridPageExtractor:
     """Keep document-bearing extractor state within the current extraction run."""
 
-    return create_extractor(api_key=api_key)
+    return create_extractor(config, api_key=api_key)
 
 
 def _raster_pages(
@@ -124,6 +124,15 @@ def _reset() -> None:
 
 
 def _render_document_result(run_result: ExtractionRun) -> None:
+    st.caption(
+        f"Model: gpt-6-sol · Reasoning: medium · Stages: {run_result.manifest.get('stages', {})}"
+    )
+    output_view = st.segmented_control("Output", ["Draft", "Verified"], default="Draft")
+    is_draft = output_view != "Verified" and bool(run_result.draft_json_text)
+    shown_markdown = run_result.draft_markdown if is_draft else run_result.artifact.markdown
+    shown_json = run_result.draft_json_text if is_draft else run_result.json_text
+    if is_draft:
+        st.info("Unverified primary extraction. Review draft values against the source document.")
     failed_pages = [page.source_page for page in run_result.pages if page.status == "failed"]
     if failed_pages:
         st.warning(
@@ -144,16 +153,18 @@ def _render_document_result(run_result: ExtractionRun) -> None:
     metric_columns[4].metric("Estimated cost", f"${run_result.cost_usd:.6f}")
     with st.container(horizontal=True):
         st.download_button(
-            "Markdown",
-            run_result.artifact.markdown,
-            file_name=run_result.markdown_filename,
+            "Draft Markdown" if is_draft else "Verified Markdown",
+            shown_markdown,
+            file_name=run_result.draft_markdown_filename
+            if is_draft
+            else run_result.markdown_filename,
             mime="text/markdown",
             icon=":material/download:",
         )
         st.download_button(
-            "JSON",
-            run_result.json_text,
-            file_name=run_result.json_filename,
+            "Draft JSON" if is_draft else "Verified JSON",
+            shown_json,
+            file_name=run_result.draft_json_filename if is_draft else run_result.json_filename,
             mime="application/json",
             icon=":material/download:",
         )
@@ -184,15 +195,15 @@ def _render_document_result(run_result: ExtractionRun) -> None:
     )
     with markdown_tab:
         with st.container(horizontal=True, horizontal_alignment="right"):
-            _COPY_BUTTON(data={"text": run_result.artifact.markdown}, height=38)
+            _COPY_BUTTON(data={"text": shown_markdown}, height=38)
         st.markdown(
-            safe_markdown_preview(run_result.artifact.markdown),
+            safe_markdown_preview(shown_markdown),
             unsafe_allow_html=True,
         )
     with json_tab:
         with st.container(horizontal=True, horizontal_alignment="right"):
-            _COPY_BUTTON(data={"text": run_result.json_text}, height=38)
-        st.json(run_result.json_text)
+            _COPY_BUTTON(data={"text": shown_json}, height=38)
+        st.json(shown_json)
     with pdf_tab:
         st.pdf(run_result.annotated_pdf, height=800)
         for limitation in run_result.annotation_limitations:
@@ -294,6 +305,17 @@ with st.sidebar:
         "I am authorized to send these pages to OpenAI and will review flagged output.",
         key="authorization_acknowledged",
     )
+    st.caption("Extraction is always enabled. Additional stages apply to the next submitted run.")
+    verify_enabled = st.toggle("Verify extraction", key="verification_enabled", value=False)
+    repair_enabled = st.toggle(
+        "Repair flagged fields",
+        key="repair_enabled",
+        value=False,
+        help="Reread up to eight flagged fields. Can run without segment verification.",
+    )
+    run_config = PipelineConfig.model_validate(
+        {"stages": {"verification": verify_enabled, "repair": repair_enabled}}
+    )
     uploaded_files = st.file_uploader(
         "Scanned PDFs or images",
         type=["pdf", "png", "jpg", "jpeg"],
@@ -329,11 +351,6 @@ with st.sidebar:
     if upload_items and not batch_error:
         with st.form("extract_documents", border=True):
             st.subheader("Page ranges")
-            retry_failed_fields_with_sol = st.checkbox(
-                "Resolve disputed fields",
-                value=True,
-                help="Use an additional visual read for up to eight disputed fields per document.",
-            )
             for item in upload_items:
                 suffix = "s" if item.page_count != 1 else ""
                 with st.expander(
@@ -421,12 +438,12 @@ if submitted and upload_items:
                         (doc.source.filename, sha256(doc.source.data).hexdigest(), doc.pages)
                         for doc in documents
                     ],
-                    "routing": routing_fingerprint(PipelineConfig()),
+                    "routing": routing_fingerprint(run_config),
                     "profiles": [
                         (str(path), sha256(path.read_bytes()).hexdigest())
                         for path in sorted(Path("profiles").glob("*.json"))
                     ],
-                    "retry_sol": retry_failed_fields_with_sol,
+                    "stages": run_config.stages.model_dump(),
                 },
                 sort_keys=True,
             ).encode()
@@ -435,7 +452,7 @@ if submitted and upload_items:
         if cached is not None and cached[0] == cache_key:
             st.session_state.batch_run = cached[1]
             st.rerun()
-        extractor = _document_extractor(_streamlit_api_key())
+        extractor = _document_extractor(_streamlit_api_key(), run_config)
         total_pages = sum(len(document.pages) for document in documents)
         progress_bar = st.progress(0, text=f"0% · 0 completed · 0 failed · {total_pages} total")
         with st.status("Processing documents", expanded=True) as extraction_status:
@@ -469,7 +486,7 @@ if submitted and upload_items:
                     source.filename, source.data, pages, dpi
                 ),
                 progress=update_progress,
-                retry_failed_fields_with_sol=retry_failed_fields_with_sol,
+                config=run_config,
             )
             extraction_status.update(
                 label="Batch extraction complete", state="complete", expanded=False

@@ -27,6 +27,7 @@ from ade_app.consensus import PeerEvidence, PeerSegment, build_peer_evidence
 from ade_app.constants import DEFAULT_DPI
 from ade_app.contracts import ExtractionRun, PageRunRecord
 from ade_app.cost import TokenUsage, calculate_cost
+from ade_app.drafts import build_draft
 from ade_app.fields import (
     apply_field_resolutions,
     discover_raw_fields,
@@ -45,10 +46,10 @@ from ade_app.openai_client import (
 from ade_app.orchestration import (
     DocumentWorkflowState,
     ExtractionStageResult,
+    FieldRetryPlan,
     IngestionStageResult,
     LayoutPageResult,
     LayoutStageResult,
-    SolRetryPlan,
     ValidationStageResult,
     WorkflowConfig,
     WorkflowRequest,
@@ -100,7 +101,7 @@ class StagedPageExtractor(Protocol):
         *,
         job_id: str,
         peers: dict[str, PeerEvidence] | None = None,
-        allow_sol: bool = True,
+        allow_repair: bool = True,
     ) -> PageResponse: ...
 
 
@@ -161,7 +162,7 @@ def _route_and_extract_impl(
     max_workers: int = 3,
     rendered_pages: tuple[RenderedPage, ...] | None = None,
     progress: ProgressCallback | None = None,
-    retry_failed_fields_with_sol: bool = False,
+    retry_failed_fields: bool = False,
     _job_id: str | None = None,
     _page_failures: dict[int, str] | None = None,
     _layout: LayoutStageResult | None = None,
@@ -170,10 +171,7 @@ def _route_and_extract_impl(
     """Run page-level semantic routing and return raw, ordered extraction evidence."""
 
     settings = _config or PipelineConfig()
-    cascade = tuple(
-        (model.name, model.reasoning_effort)
-        for model in (settings.models.luna, settings.models.terra, settings.models.sol)
-    )
+    cascade = tuple((model.name, model.reasoning_effort) for model in (settings.model,))
     page_count = get_page_count(source)
     if not pages or min(pages) < 1 or max(pages) > page_count:
         raise ValueError("selected pages are outside the document")
@@ -288,7 +286,7 @@ def _route_and_extract_impl(
                     primary_by_page[page.source_page],
                     job_id=job_id,
                     peers=peers,
-                    allow_sol=retry_failed_fields_with_sol,
+                    allow_repair=retry_failed_fields,
                 )
             else:
                 page_response = extractor.extract(page, job_id=job_id, page_count=page_count)
@@ -297,6 +295,7 @@ def _route_and_extract_impl(
                     source_page=page.source_page,
                     extraction=page_response.extraction,
                     candidate_extraction=page_response.candidate_extraction,
+                    draft_extraction=page_response.draft_extraction,
                 ),
                 PageRunRecord(
                     source_page=page.source_page,
@@ -414,14 +413,14 @@ def _validate_and_link_impl(
     extraction: ExtractionStageResult,
     *,
     review_threshold: float,
-    retry_failed_fields_with_sol: bool,
-    max_sol_fields: int,
+    retry_failed_fields: bool,
+    max_repair_fields: int,
 ) -> ValidationStageResult:
     fields = link_and_validate_fields(extraction.raw_fields, review_threshold=review_threshold)
-    if extraction.sol_resolutions:
+    if extraction.field_resolutions:
         fields = apply_field_resolutions(
             fields,
-            extraction.sol_resolutions,
+            extraction.field_resolutions,
             review_threshold=review_threshold,
         )
 
@@ -452,12 +451,12 @@ def _validate_and_link_impl(
             untrusted.setdefault(evidence.page, set()).add(evidence.region_id)
 
     retry_plan = None
-    if retry_failed_fields_with_sol and extraction.sol_resolutions is None:
+    if retry_failed_fields and extraction.field_resolutions is None:
         mandatory = [
             field
             for field in fields
             if "verification_attempted" not in field.reasons
-            and not any(evidence.route == "sol" for evidence in field.evidence)
+            and not any(evidence.route == "repair" for evidence in field.evidence)
             and (
                 field.canonical_name in _CRITICAL_FIELDS
                 or field.confidence < 75
@@ -471,9 +470,9 @@ def _validate_and_link_impl(
         ]
         target_ids = list(dict.fromkeys(field.field_id for field in (*mandatory, *optional)))
         by_id = {field.field_id: field for field in fields}
-        selected = tuple(by_id[field_id] for field_id in target_ids[:max_sol_fields])
+        selected = tuple(by_id[field_id] for field_id in target_ids[:max_repair_fields])
         if selected:
-            retry_plan = SolRetryPlan(
+            retry_plan = FieldRetryPlan(
                 mandatory_region_ids=tuple(
                     dict.fromkeys(
                         evidence.region_id for field in mandatory for evidence in field.evidence
@@ -503,7 +502,9 @@ def _generate_outputs_impl(
     *,
     job_id: str,
     cascade: tuple[tuple[str, str], ...],
+    config: PipelineConfig | None = None,
 ) -> ExtractionRun:
+    settings = config or PipelineConfig()
     failed = sum(record.status == "failed" for record in extraction.page_records)
     base = render_document(
         page_count=ingestion.page_count,
@@ -544,9 +545,8 @@ def _generate_outputs_impl(
         "endpoint": "/v1/responses",
         "provider_response_storage": False,
         "model": artifact.metadata.model_version,
-        "model_cascade": [
-            {"model": model, "reasoning_effort": effort} for model, effort in cascade
-        ],
+        "reasoning_effort": settings.model.reasoning_effort,
+        "stages": settings.stages.model_dump(),
         "peer_evidence_count": extraction.peer_evidence_count,
         "prompt_sha256": active_prompt_hashes(),
         "completed_page_count": len(request.pages) - failed,
@@ -573,7 +573,7 @@ def _generate_outputs_impl(
         },
         "routing": {
             "layout_engine": "PP-StructureV3",
-            "form_detection": "OpenCV geometry + Terra semantics",
+            "form_detection": "OpenCV geometry + GPT-6 Sol semantics",
             "policy": "calibrated_fail_closed",
             "full_page_fallback_count": sum(
                 record.full_page_fallback is True for record in extraction.page_records
@@ -611,6 +611,13 @@ def _generate_outputs_impl(
             )
     confidence_text = confidence_report.model_dump_json(indent=2)
     manifest["artifact_sha256"] = artifact_hashes(artifact.markdown, json_text, annotated_pdf)
+    draft_markdown, draft_json_text = build_draft(source.filename, extraction.outcomes)
+    from hashlib import sha256
+
+    manifest["draft_sha256"] = {
+        "markdown": sha256(draft_markdown.encode()).hexdigest(),
+        "json": sha256(draft_json_text.encode()).hexdigest(),
+    }
     manifest = validate_document_manifest(manifest)
     return ExtractionRun(
         artifact=artifact,
@@ -627,6 +634,10 @@ def _generate_outputs_impl(
         annotated_pdf=annotated_pdf,
         annotation_limitations=limitations,
         manifest=manifest,
+        draft_markdown=draft_markdown,
+        draft_json_text=draft_json_text,
+        draft_markdown_filename=f"{source.stem}.draft.md",
+        draft_json_filename=f"{source.stem}.draft.json",
     )
 
 
@@ -712,12 +723,12 @@ class _DocumentWorkflowOperations:
         extractor: PageExtractor,
         *,
         max_workers: int,
-        retry_failed_fields_with_sol: bool,
+        retry_failed_fields: bool,
         config: PipelineConfig,
     ) -> None:
         self.extractor = extractor
         self.max_workers = max_workers
-        self.retry_failed_fields_with_sol = retry_failed_fields_with_sol
+        self.retry_failed_fields = retry_failed_fields
         self.config = config
         self.job_id = generate_job_id()
         self.terminal_error: Exception | None = None
@@ -790,11 +801,11 @@ class _DocumentWorkflowOperations:
         layout: LayoutStageResult,
         ingestion: IngestionStageResult,
         previous: ExtractionStageResult | None,
-        retry_plan: SolRetryPlan | None,
+        retry_plan: FieldRetryPlan | None,
     ) -> ExtractionStageResult:
         try:
             if previous is not None and retry_plan is not None:
-                return self._resolve_with_sol(previous, retry_plan, ingestion.rendered_pages)
+                return self._resolve_flagged_fields(previous, retry_plan, ingestion.rendered_pages)
             request = self._request
             failures = {
                 error.source_page: error.message
@@ -809,7 +820,7 @@ class _DocumentWorkflowOperations:
                 max_workers=self.max_workers,
                 rendered_pages=ingestion.rendered_pages,
                 progress=request.progress,
-                retry_failed_fields_with_sol=self.retry_failed_fields_with_sol,
+                retry_failed_fields=self.retry_failed_fields,
                 _job_id=self.job_id,
                 _page_failures=failures,
                 _layout=layout,
@@ -823,8 +834,8 @@ class _DocumentWorkflowOperations:
         return _validate_and_link_impl(
             extraction,
             review_threshold=self.config.routing.field_review_threshold_percent,
-            retry_failed_fields_with_sol=self.retry_failed_fields_with_sol,
-            max_sol_fields=self.config.routing.max_sol_fields_per_document,
+            retry_failed_fields=self.retry_failed_fields,
+            max_repair_fields=self.config.routing.max_repair_fields_per_document,
         )
 
     def generate_outputs(
@@ -833,14 +844,7 @@ class _DocumentWorkflowOperations:
         extraction: ExtractionStageResult,
         validation: ValidationStageResult,
     ) -> ExtractionRun:
-        cascade = tuple(
-            (model.name, model.reasoning_effort)
-            for model in (
-                self.config.models.luna,
-                self.config.models.terra,
-                self.config.models.sol,
-            )
-        )
+        cascade = tuple((model.name, model.reasoning_effort) for model in (self.config.model,))
         return _generate_outputs_impl(
             self._request,
             ingestion,
@@ -848,24 +852,25 @@ class _DocumentWorkflowOperations:
             validation,
             job_id=self.job_id,
             cascade=cascade,
+            config=self.config,
         )
 
     def bind_request(self, request: WorkflowRequest) -> None:
         self._request = request
 
-    def _resolve_with_sol(
+    def _resolve_flagged_fields(
         self,
         previous: ExtractionStageResult,
-        plan: SolRetryPlan,
+        plan: FieldRetryPlan,
         pages: tuple[RenderedPage, ...],
     ) -> ExtractionStageResult:
         resolver = self.extractor
         if not isinstance(resolver, PostProcessingResolver):
-            return replace(previous, sol_resolutions={})
+            return replace(previous, field_resolutions={})
         result = resolver.resolve_postprocessing_fields(
             list(plan.fields), pages, job_id=self.job_id
         )
-        model = self.config.models.sol.name
+        model = self.config.model.name
         usage = result.usage
         cost = calculate_cost(usage, model)
         records = list(previous.page_records)
@@ -879,13 +884,17 @@ class _DocumentWorkflowOperations:
                 0,
             )
             record = records[index]
+            model_usage: dict[str, TokenUsage] = {}
+            for used_model, used_usage in (*record.usage_by_model, (model, usage)):
+                model_usage[used_model] = model_usage.get(used_model, TokenUsage()) + used_usage
             records[index] = replace(
                 record,
                 usage=record.usage + usage,
                 cost_usd=record.cost_usd + cost,
                 api_call_count=record.api_call_count + result.api_call_count,
+                routing_call_count=record.routing_call_count + result.api_call_count,
                 retry_count=record.retry_count + result.retry_count,
-                usage_by_model=(*record.usage_by_model, (model, usage)),
+                usage_by_model=tuple(model_usage.items()),
                 models_used=tuple(dict.fromkeys((*record.models_used, model))),
             )
         return replace(
@@ -896,7 +905,7 @@ class _DocumentWorkflowOperations:
             model_version="+".join(
                 dict.fromkeys(filter(None, (*previous.model_version.split("+"), model)))
             ),
-            sol_resolutions=result.resolutions,
+            field_resolutions=result.resolutions,
         )
 
 
@@ -909,7 +918,7 @@ def extract_document(
     max_workers: int = 3,
     rendered_pages: tuple[RenderedPage, ...] | None = None,
     progress: ProgressCallback | None = None,
-    retry_failed_fields_with_sol: bool = False,
+    retry_failed_fields: bool | None = None,
     max_graph_retries: int = 1,
     config: PipelineConfig | None = None,
 ) -> ExtractionRun:
@@ -925,10 +934,17 @@ def extract_document(
         raise ValueError("selected pages are outside the document or not strictly increasing")
 
     pipeline_config = config or PipelineConfig()
+    if retry_failed_fields is not None:
+        pipeline_config = pipeline_config.model_copy(
+            update={
+                "stages": pipeline_config.stages.model_copy(update={"repair": retry_failed_fields})
+            }
+        )
+    retry_failed_fields = pipeline_config.stages.repair
     workflow_config = WorkflowConfig(
         max_graph_retries=max_graph_retries,
         max_concurrency=max_workers,
-        retry_failed_fields_with_sol=retry_failed_fields_with_sol,
+        retry_failed_fields=retry_failed_fields,
     )
     request = WorkflowRequest(
         source=source,
@@ -940,7 +956,7 @@ def extract_document(
     operations = _DocumentWorkflowOperations(
         extractor,
         max_workers=max_workers,
-        retry_failed_fields_with_sol=retry_failed_fields_with_sol,
+        retry_failed_fields=retry_failed_fields,
         config=pipeline_config,
     )
     operations.bind_request(request)

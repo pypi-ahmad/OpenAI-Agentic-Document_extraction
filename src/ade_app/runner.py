@@ -82,7 +82,7 @@ def run_pipeline(
             extractor,
             dpi=settings.imaging.dpi,
             max_workers=settings.runtime.max_page_workers,
-            retry_failed_fields_with_sol=True,
+            retry_failed_fields=settings.stages.repair,
             max_graph_retries=settings.retries.graph_max_page_retries,
             config=settings,
         )

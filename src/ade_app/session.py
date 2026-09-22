@@ -23,6 +23,8 @@ SESSION_KEYS = (
     "authorization_acknowledged",
     "evaluation_report_upload",
     "extraction_cache",
+    "verification_enabled",
+    "repair_enabled",
 )
 SESSION_PREFIXES = ("start_page_", "end_page_")
 

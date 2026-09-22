@@ -1,6 +1,6 @@
 """Hybrid layout-guided extraction pipeline combining local computer vision and tiered LLM models.
 
-Responsible for orchestrating PP-StructureV3 layout proposals with Luna/Terra/Sol model fallbacks,
+Responsible for orchestrating PP-StructureV3 layout proposals with GPT-6 Sol model fallbacks,
 applying segment routing decisions, and auditing visual foreground coverage.
 Must NOT fabricate missing text or bypass layout confidence thresholds.
 Next: ade_app.pipeline where HybridPageExtractor instances process document pages.
@@ -52,7 +52,7 @@ LOCAL_PROFILE_PATH = Path("profiles/local-routes.json")
 
 
 class HybridPageExtractor:
-    """Analyze locally first; fail closed to the established Terra/Sol path."""
+    """Analyze locally first; fail closed to the established GPT-6 Sol path."""
 
     def __init__(
         self,
@@ -72,8 +72,6 @@ class HybridPageExtractor:
         self._mode = getattr(llm, "_config", PipelineConfig()).routing.mode
         if self._mode == "baseline":
             self._calibrated_routes = set()
-        if self._mode != "selective":
-            self._llm._profile_trusted = False
         self._llm.calibrated_routes = self._calibrated_routes
         self._lock = Lock()
         self._decisions: dict[tuple[str, int], RouteDecision] = {}
@@ -179,7 +177,7 @@ class HybridPageExtractor:
                             confidence=0.0,
                             box=prepared.box_to_original(box),
                             prepared_box=box,
-                            route="terra",
+                            route="verification",
                         )
                     )
                 analysis = analysis.model_copy(update={"regions": regions})
@@ -197,7 +195,7 @@ class HybridPageExtractor:
             and analysis.status == "complete"
             and analysis.regions
             and (
-                decision.use_full_page_terra
+                decision.use_full_page_model
                 or any(region.route != "local_text" for region in analysis.regions)
             )
         ):
@@ -227,7 +225,7 @@ class HybridPageExtractor:
                 raise
             return _include_failed_regional_usage(fallback, regional_failure)
 
-        if decision.use_full_page_terra:
+        if decision.use_full_page_model:
             return self._llm.extract_primary(page, job_id=job_id, page_count=page_count)
         if analysis is None or any(region.route != "local_text" for region in analysis.regions):
             return self._llm.extract_primary(page, job_id=job_id, page_count=page_count)
@@ -286,7 +284,7 @@ class HybridPageExtractor:
         *,
         job_id: str,
         peers: dict[str, PeerEvidence] | None = None,
-        allow_sol: bool = True,
+        allow_repair: bool = True,
     ) -> PageResponse:
         try:
             with self._lock:
@@ -294,11 +292,11 @@ class HybridPageExtractor:
                 decision = self._decisions.get((job_id, page.source_page))
             if prepared is not None and primary.segment_sources:
                 result = self._llm.finalize_regions(
-                    prepared, primary, job_id=job_id, allow_sol=allow_sol
+                    prepared, primary, job_id=job_id, allow_repair=allow_repair
                 )
             else:
                 result = self._llm.finalize(
-                    page, primary, job_id=job_id, peers=peers, allow_sol=allow_sol
+                    page, primary, job_id=job_id, peers=peers, allow_repair=allow_repair
                 )
             issues = (
                 tuple(issue.code for issue in decision.analysis.issues)

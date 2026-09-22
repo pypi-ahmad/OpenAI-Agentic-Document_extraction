@@ -6,7 +6,7 @@ LayoutRegion/GeometryProposal schemas the rest of the app relies on. Box coordin
 throughout this file are fractions of page width/height (0-1), not pixels; see _box.
 Must not silently invent regions/proposals when the model or geometry pass fails —
 failures become LayoutIssue entries and a "partial"/"unavailable" status instead.
-Next: hybrid.py, which reads LayoutAnalysis and decide_routes() to pick local-vs-terra
+Next: hybrid.py, which reads LayoutAnalysis and decide_routes() to pick local-vs-model
 routing; preprocessing.py for how PreparedPage is produced upstream.
 """
 
@@ -96,7 +96,7 @@ class LayoutRegion(StrictModel):
     confidence_source: Literal["pp_structure", "opencv_geometry"] = "pp_structure"
     box: Box
     prepared_box: Box | None = None
-    route: Literal["local_text", "local_table", "terra"]
+    route: Literal["local_text", "local_table", "verification"]
     text: str | None = None
     html: str | None = None
     markdown: str | None = None
@@ -119,9 +119,9 @@ class LayoutRegion(StrictModel):
             raise ValueError("local_table regions require table HTML")
         if (
             self.category in {"form_field", "checkbox", "handwriting", "other"}
-            and self.route != "terra"
+            and self.route != "verification"
         ):
-            raise ValueError(f"{self.category} regions must route to terra")
+            raise ValueError(f"{self.category} regions must route to the visual model")
         if self.category != "table" and any(
             item is not None for item in (self.html, self.markdown, self.table_is_simple)
         ):
@@ -196,7 +196,7 @@ class LayoutAnalysis(StrictModel):
 @dataclass(frozen=True, slots=True)
 class RouteDecision:
     analysis: LayoutAnalysis | None
-    use_full_page_terra: bool
+    use_full_page_model: bool
     reason: str
 
 
@@ -316,14 +316,16 @@ def decide_routes(analysis: LayoutAnalysis | None, calibrated_routes: set[str]) 
     if analysis.status != "complete":
         codes = ",".join(sorted({item.code for item in analysis.issues if not item.recovered}))
         return RouteDecision(analysis, True, f"layout_{analysis.status}:{codes}")
-    required: set[str] = {region.route for region in analysis.regions if region.route != "terra"}
+    required: set[str] = {
+        region.route for region in analysis.regions if region.route != "verification"
+    }
     if analysis.proposals:
-        required.add("terra")
+        required.add("verification")
     missing = required - calibrated_routes
     if missing:
         return RouteDecision(analysis, True, "uncalibrated_routes:" + ",".join(sorted(missing)))
-    if any(region.route == "terra" for region in analysis.regions) or analysis.proposals:
-        return RouteDecision(analysis, True, "ambiguous_regions_require_terra")
+    if any(region.route == "verification" for region in analysis.regions) or analysis.proposals:
+        return RouteDecision(analysis, True, "ambiguous_regions_require_model")
     return RouteDecision(analysis, False, "all_regions_locally_accepted")
 
 
@@ -573,11 +575,11 @@ def _regions(payload: dict[str, Any], prepared: PreparedPage) -> list[LayoutRegi
                 used_tables.add(table[0])
             table_is_simple, markdown = _table_markdown(html, confidence)
         if category == "table" and html:
-            route: Literal["local_text", "local_table", "terra"] = "local_table"
+            route: Literal["local_text", "local_table", "verification"] = "local_table"
         elif category == "text" and text and str(text).strip():
             route = "local_text"
         else:
-            route = "terra"
+            route = "verification"
         regions.append(
             LayoutRegion(
                 region_id=f"p{prepared.page.source_page}-r{index}",

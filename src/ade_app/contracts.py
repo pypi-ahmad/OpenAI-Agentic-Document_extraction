@@ -57,6 +57,21 @@ class ExtractionRun:
     annotated_pdf: bytes
     annotation_limitations: tuple[AnnotationLimitation, ...]
     manifest: dict[str, Any]
+    draft_markdown: str = ""
+    draft_json_text: str = ""
+    draft_markdown_filename: str = "draft.md"
+    draft_json_filename: str = "draft.json"
+
+    @property
+    def draft_files(self) -> dict[str, str]:
+        return (
+            {
+                self.draft_markdown_filename: self.draft_markdown,
+                self.draft_json_filename: self.draft_json_text,
+            }
+            if self.draft_json_text
+            else {}
+        )
 
     @property
     def zip_bytes(self) -> bytes:
@@ -72,4 +87,5 @@ class ExtractionRun:
             annotated_pdf_filename=self.annotated_pdf_filename,
             annotated_pdf=self.annotated_pdf,
             manifest=self.manifest,
+            extra_files=self.draft_files,
         )

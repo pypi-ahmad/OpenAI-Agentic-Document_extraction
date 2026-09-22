@@ -12,6 +12,7 @@ import io
 import json
 import zipfile
 from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 from pathlib import PurePosixPath
 from typing import Any
 
@@ -40,6 +41,7 @@ class BatchBundleEntry:
     annotated_pdf_filename: str
     annotated_pdf: bytes
     manifest: dict[str, Any]
+    extra_files: dict[str, str] = dataclass_field(default_factory=dict)
 
 
 def build_annotated_pdf(
@@ -227,6 +229,7 @@ def build_output_bundle(
     annotated_pdf_filename: str,
     annotated_pdf: bytes,
     manifest: dict[str, Any],
+    extra_files: dict[str, str] | None = None,
 ) -> bytes:
     """Package all run artifacts without touching the filesystem."""
 
@@ -235,6 +238,7 @@ def build_output_bundle(
         json_filename,
         confidence_filename,
         annotated_pdf_filename,
+        *(extra_files or {}),
     ):
         _validate_archive_component(filename)
     output = io.BytesIO()
@@ -244,6 +248,8 @@ def build_output_bundle(
         archive.writestr(confidence_filename, confidence_text)
         archive.writestr(annotated_pdf_filename, annotated_pdf)
         archive.writestr("manifest.json", json.dumps(manifest, indent=2))
+        for filename, content in (extra_files or {}).items():
+            archive.writestr(filename, content)
     return output.getvalue()
 
 
@@ -262,6 +268,7 @@ def build_batch_output_bundle(
             entry.json_filename,
             entry.confidence_filename,
             entry.annotated_pdf_filename,
+            *entry.extra_files,
         ):
             _validate_archive_component(filename)
     output = io.BytesIO()
@@ -273,6 +280,8 @@ def build_batch_output_bundle(
             archive.writestr(prefix + entry.confidence_filename, entry.confidence_text)
             archive.writestr(prefix + entry.annotated_pdf_filename, entry.annotated_pdf)
             archive.writestr(prefix + "manifest.json", json.dumps(entry.manifest, indent=2))
+            for filename, content in entry.extra_files.items():
+                archive.writestr(prefix + filename, content)
         archive.writestr("batch-manifest.json", json.dumps(manifest, indent=2))
     return output.getvalue()
 

@@ -57,6 +57,7 @@ class PageOutcome:
     extraction: PageExtraction | None = None
     failure_reason: str | None = None
     candidate_extraction: PageExtraction | None = None
+    draft_extraction: PageExtraction | None = None
 
     def __post_init__(self) -> None:
         if self.source_page < 1:

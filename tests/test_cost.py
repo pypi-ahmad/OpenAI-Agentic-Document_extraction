@@ -14,7 +14,7 @@ from ade_app.cost import TokenUsage, calculate_cost
             TokenUsage(input_tokens=1_000_000, cached_input_tokens=1_000_000),
             Decimal("0.20"),
         ),
-        (TokenUsage(output_tokens=1_000_000), Decimal("12.00")),
+        (TokenUsage(output_tokens=1_000_000), Decimal("10.00")),
         (
             TokenUsage(
                 input_tokens=1_000_000,
@@ -22,7 +22,7 @@ from ade_app.cost import TokenUsage, calculate_cost
                 cache_write_tokens=500_000,
                 output_tokens=100_000,
             ),
-            Decimal("3.00"),
+            Decimal("2.80"),
         ),
     ],
 )
@@ -30,11 +30,10 @@ def test_calculate_cost(usage: TokenUsage, expected: Decimal) -> None:
     assert calculate_cost(usage) == expected
 
 
-def test_model_specific_costs_use_terra_and_sol_rates() -> None:
+def test_single_model_costs() -> None:
     usage = TokenUsage(input_tokens=1_000_000, output_tokens=1_000_000)
 
-    assert calculate_cost(usage, "gpt-5.6-terra") == Decimal("14")
-    assert calculate_cost(usage, "gpt-5.6-sol") == Decimal("24")
+    assert calculate_cost(usage, "gpt-6-sol") == Decimal("12")
 
 
 def test_usage_rejects_cached_tokens_above_total() -> None:
@@ -47,9 +46,10 @@ def test_usage_rejects_cached_and_cache_write_tokens_above_total() -> None:
         TokenUsage(input_tokens=10, cached_input_tokens=6, cache_write_tokens=5)
 
 
-def test_calculate_cost_uses_luna_rate() -> None:
-    usage = TokenUsage(input_tokens=1_000_000, output_tokens=1_000_000)
-    assert calculate_cost(usage, "gpt-5.6-luna") == Decimal("1.40")
+def test_calculate_cost_rejects_legacy_models() -> None:
+    for model in ("gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol"):
+        with pytest.raises(ValueError, match="unsupported pricing model"):
+            calculate_cost(TokenUsage(), model)
 
 
 def test_calculate_cost_rejects_unknown_model() -> None:

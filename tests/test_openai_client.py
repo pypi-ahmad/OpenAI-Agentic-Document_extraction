@@ -9,6 +9,7 @@ import pytest
 from openai import APIConnectionError
 from PIL import Image
 
+from ade_app.config import PipelineConfig, StageSettings
 from ade_app.fields import discover_raw_fields
 from ade_app.models import (
     AuditedSemanticPageExtraction,
@@ -118,14 +119,18 @@ def test_primary_luna_call_uses_private_bounded_schema(
     quality_profile,
 ) -> None:
     responses = FakeResponses(audited_semantic_page)
-    extractor = OpenAIPageExtractor(responses, quality_profile)
+    extractor = OpenAIPageExtractor(
+        responses,
+        quality_profile,
+        config=PipelineConfig(stages=StageSettings(verification=True, repair=True)),
+    )
     page = RenderedPage(source_page=2, png_bytes=b"png", width=10, height=10)
 
     result = extractor.extract_primary(page, job_id="parse-test", page_count=3)
 
-    assert responses.kwargs["model"] == "gpt-5.6-luna"
+    assert responses.kwargs["model"] == "gpt-6-sol"
     assert responses.kwargs["store"] is False
-    assert responses.kwargs["reasoning"] == {"effort": "low"}
+    assert responses.kwargs["reasoning"] == {"effort": "medium"}
     assert responses.kwargs["max_output_tokens"] == FULL_PAGE_MAX_OUTPUT_TOKENS == 32_000
     image = responses.kwargs["input"][0]["content"][1]
     assert image["detail"] == "original"
@@ -210,7 +215,11 @@ def test_invalid_primary_page_retries_without_switching_models(
     audited_semantic_page: AuditedSemanticPageExtraction, quality_profile
 ) -> None:
     responses = FailOnceResponses(audited_semantic_page)
-    result = OpenAIPageExtractor(responses, quality_profile).extract_primary(
+    result = OpenAIPageExtractor(
+        responses,
+        quality_profile,
+        config=PipelineConfig(stages=StageSettings(verification=True, repair=True)),
+    ).extract_primary(
         RenderedPage(source_page=1, png_bytes=b"png", width=10, height=10),
         job_id="parse-test",
         page_count=1,
@@ -221,9 +230,9 @@ def test_invalid_primary_page_retries_without_switching_models(
     assert result.attempts == 2
     assert result.api_call_count == 2
     assert result.retry_count == 1
-    assert responses.kwargs["model"] == "gpt-5.6-luna"
-    assert responses.kwargs["reasoning"] == {"effort": "low"}
-    assert responses.kwargs["metadata"]["attempt"] == "full-gpt-5.6-luna"
+    assert responses.kwargs["model"] == "gpt-6-sol"
+    assert responses.kwargs["reasoning"] == {"effort": "medium"}
+    assert responses.kwargs["metadata"]["attempt"] == "full-gpt-6-sol"
 
 
 def test_persistently_invalid_terra_page_stops_after_bounded_retry(
@@ -232,7 +241,11 @@ def test_persistently_invalid_terra_page_stops_after_bounded_retry(
     responses = AlwaysFailResponses(audited_semantic_page)
 
     with pytest.raises(StructuredOutputError, match="after 2 attempts"):
-        OpenAIPageExtractor(responses, quality_profile).extract(
+        OpenAIPageExtractor(
+            responses,
+            quality_profile,
+            config=PipelineConfig(stages=StageSettings(verification=True, repair=True)),
+        ).extract(
             RenderedPage(source_page=1, png_bytes=b"png", width=10, height=10),
             job_id="parse-test",
             page_count=1,
@@ -246,7 +259,11 @@ def test_billed_invalid_response_usage_is_retained_on_retry(
 ) -> None:
     responses = ReturnedInvalidResponses(audited_semantic_page)
 
-    result = OpenAIPageExtractor(responses, quality_profile).extract_primary(
+    result = OpenAIPageExtractor(
+        responses,
+        quality_profile,
+        config=PipelineConfig(stages=StageSettings(verification=True, repair=True)),
+    ).extract_primary(
         RenderedPage(source_page=1, png_bytes=b"png", width=10, height=10),
         job_id="parse-test",
         page_count=1,
@@ -265,7 +282,11 @@ def test_billed_invalid_response_usage_is_attached_to_final_failure(
     responses = ReturnedInvalidResponses(audited_semantic_page, always=True)
 
     with pytest.raises(StructuredOutputError) as captured:
-        OpenAIPageExtractor(responses, quality_profile).extract_primary(
+        OpenAIPageExtractor(
+            responses,
+            quality_profile,
+            config=PipelineConfig(stages=StageSettings(verification=True, repair=True)),
+        ).extract_primary(
             RenderedPage(source_page=1, png_bytes=b"png", width=10, height=10),
             job_id="parse-test",
             page_count=1,
@@ -273,7 +294,7 @@ def test_billed_invalid_response_usage_is_attached_to_final_failure(
 
     error = captured.value
     assert error.usage.input_tokens == 200
-    assert error.usage_by_model[0][0] == "gpt-5.6-luna"
+    assert error.usage_by_model[0][0] == "gpt-6-sol"
     assert error.api_call_count == 2
     assert error.routing_call_count == 0
     assert error.retry_count == 1
@@ -336,23 +357,25 @@ def test_missing_sol_patch_retains_terra_and_needs_review(
     Image.new("RGB", (100, 100), "white").save(png, format="PNG")
     responses = CascadeResponses(initial)
 
-    result = OpenAIPageExtractor(responses, profile).extract(
-        RenderedPage(1, png.getvalue(), 100, 100), job_id="parse-test", page_count=1
-    )
+    result = OpenAIPageExtractor(
+        responses,
+        profile,
+        config=PipelineConfig(stages=StageSettings(verification=True, repair=True)),
+    ).extract(RenderedPage(1, png.getvalue(), 100, 100), job_id="parse-test", page_count=1)
 
     assert responses.calls == 2
-    assert responses.kwargs["model"] == "gpt-5.6-terra"
+    assert responses.kwargs["model"] == "gpt-6-sol"
     assert responses.kwargs["reasoning"] == {"effort": "medium"}
     assert responses.kwargs["max_output_tokens"] == CONSENSUS_MAX_OUTPUT_TOKENS == 8_000
-    assert result.models_used == ("gpt-5.6-luna", "gpt-5.6-terra")
+    assert result.models_used == ("gpt-6-sol",)
     assert result.api_call_count == 2
     assert result.routing_call_count == 1
     assert result.retry_count == 0
     assert result.segments[0].status == "needs_review"
     assert "independent_read_failure" in result.segments[0].reasons
     assert [attempt.model for attempt in result.segments[0].attempts] == [
-        "gpt-5.6-luna",
-        "gpt-5.6-terra",
+        "gpt-6-sol",
+        "gpt-6-sol",
     ]
     assert result.segments[0].attempts[1].batch_index == 1
 
@@ -418,15 +441,17 @@ def test_sol_can_confirm_independent_correction(
     Image.new("RGB", (100, 100), "white").save(png, format="PNG")
 
     responses = RepairResponses(initial)
-    result = OpenAIPageExtractor(responses, profile).extract(
-        RenderedPage(1, png.getvalue(), 100, 100), job_id="parse-test", page_count=1
-    )
+    result = OpenAIPageExtractor(
+        responses,
+        profile,
+        config=PipelineConfig(stages=StageSettings(verification=True, repair=True)),
+    ).extract(RenderedPage(1, png.getvalue(), 100, 100), job_id="parse-test", page_count=1)
 
     assert result.extraction.markdown.strip() == "# Corrected heading"
     assert result.segments[0].status == "accepted_resolution"
     assert result.segments[0].unresolved_fields == ()
     assert result.segments[0].final_score < 90
-    assert result.models_used == ("gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol")
+    assert result.models_used == ("gpt-6-sol",)
     assert result.api_call_count == 3
     assert result.routing_call_count == 2
     assert result.retry_count == 0
@@ -483,9 +508,11 @@ def test_independent_consensus_is_counted_per_failing_segment(
     png = io.BytesIO()
     Image.new("RGB", (100, 100), "white").save(png, format="PNG")
 
-    result = OpenAIPageExtractor(Responses(initial), profile).extract(
-        RenderedPage(1, png.getvalue(), 100, 100), job_id="parse-test", page_count=1
-    )
+    result = OpenAIPageExtractor(
+        Responses(initial),
+        profile,
+        config=PipelineConfig(stages=StageSettings(verification=True, repair=True)),
+    ).extract(RenderedPage(1, png.getvalue(), 100, 100), job_id="parse-test", page_count=1)
 
     assert result.attempts == 3
     assert result.api_call_count == 3
@@ -557,9 +584,11 @@ def test_independent_consensus_reads_each_low_quality_segment(
     Image.new("RGB", (100, 100), "white").save(png, format="PNG")
 
     responses = BatchedResponses(initial)
-    result = OpenAIPageExtractor(responses, profile).extract(
-        RenderedPage(1, png.getvalue(), 100, 100), job_id="parse-test", page_count=1
-    )
+    result = OpenAIPageExtractor(
+        responses,
+        profile,
+        config=PipelineConfig(stages=StageSettings(verification=True, repair=True)),
+    ).extract(RenderedPage(1, png.getvalue(), 100, 100), job_id="parse-test", page_count=1)
 
     assert responses.calls == 6
     assert result.attempts == 6
@@ -574,7 +603,7 @@ def test_independent_consensus_reads_each_low_quality_segment(
         for segment in result.segments
     ]
     assert {segment.attempts[1].batch_index for segment in result.segments} == {1, 2, 3, 4, 5}
-    assert result.models_used == ("gpt-5.6-luna", "gpt-5.6-terra")
+    assert result.models_used == ("gpt-6-sol",)
 
 
 def test_matching_but_uncertain_independent_read_remains_needs_review(
@@ -614,9 +643,11 @@ def test_matching_but_uncertain_independent_read_remains_needs_review(
     png = io.BytesIO()
     Image.new("RGB", (100, 100), "white").save(png, format="PNG")
 
-    result = OpenAIPageExtractor(Responses(initial), profile).extract(
-        RenderedPage(1, png.getvalue(), 100, 100), job_id="parse-test", page_count=1
-    )
+    result = OpenAIPageExtractor(
+        Responses(initial),
+        profile,
+        config=PipelineConfig(stages=StageSettings(verification=True, repair=True)),
+    ).extract(RenderedPage(1, png.getvalue(), 100, 100), job_id="parse-test", page_count=1)
 
     assert result.attempts == 2
     assert result.segments[0].status == "needs_review"
@@ -667,9 +698,11 @@ def test_independent_transport_retry_is_explicitly_counted(
     Image.new("RGB", (100, 100), "white").save(png, format="PNG")
     responses = Responses(initial)
 
-    result = OpenAIPageExtractor(responses, profile).extract(
-        RenderedPage(1, png.getvalue(), 100, 100), job_id="parse-test", page_count=1
-    )
+    result = OpenAIPageExtractor(
+        responses,
+        profile,
+        config=PipelineConfig(stages=StageSettings(verification=True, repair=True)),
+    ).extract(RenderedPage(1, png.getvalue(), 100, 100), job_id="parse-test", page_count=1)
 
     assert responses.calls == 3
     assert result.attempts == 3
@@ -688,7 +721,7 @@ def test_escalation_budget_marks_remaining_segments_for_review(
 ) -> None:
     from ade_app.config import PipelineConfig
 
-    config = PipelineConfig()
+    config = PipelineConfig(stages=StageSettings(verification=True, repair=True))
     config.routing.max_escalated_segments_per_page = 1
     initial = audited_semantic_page.model_copy(deep=True)
     initial.children = [initial.children[0].model_copy(deep=True) for _ in range(2)]
@@ -783,14 +816,18 @@ def test_unconfirmed_field_is_redacted_without_calling_sol(
     png = io.BytesIO()
     Image.new("RGB", (100, 100), "white").save(png, format="PNG")
     responses = Responses(initial)
-    extractor = OpenAIPageExtractor(responses, quality_profile)
+    extractor = OpenAIPageExtractor(
+        responses,
+        quality_profile,
+        config=PipelineConfig(stages=StageSettings(verification=True, repair=True)),
+    )
     page = RenderedPage(1, png.getvalue(), 100, 100)
 
     primary = extractor.extract_primary(page, job_id="parse-test", page_count=1)
-    result = extractor.finalize(page, primary, job_id="parse-test", allow_sol=False)
+    result = extractor.finalize(page, primary, job_id="parse-test", allow_repair=False)
 
     assert responses.calls == 2
-    assert responses.kwargs["model"] == "gpt-5.6-terra"
+    assert responses.kwargs["model"] == "gpt-6-sol"
     assert "[UNVERIFIED]" in result.extraction.markdown
     assert "Original Name" not in result.extraction.markdown
     assert "Invented Name" not in result.extraction.markdown

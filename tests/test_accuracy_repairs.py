@@ -23,7 +23,7 @@ from ade_app.services.confidence import build_confidence_report
 
 
 def test_missing_evidence_cannot_be_accepted() -> None:
-    assert _segment_evidence(None, 0) == ("terra", 0.0, ("missing_evidence",))
+    assert _segment_evidence(None, 0) == ("verification", 0.0, ("missing_evidence",))
 
 
 def test_public_uncertainty_is_null_not_a_candidate() -> None:
@@ -41,7 +41,7 @@ def test_public_uncertainty_is_null_not_a_candidate() -> None:
                 page=1,
                 region_id="text-0",
                 box=Box(xmin=0, ymin=0, xmax=1, ymax=1),
-                route="luna",
+                route="primary",
                 candidate="candidate",
                 confidence=99,
             )
@@ -122,7 +122,13 @@ def test_local_gate_precedes_real_regional_interface() -> None:
         ],
         proposals=[],
     )
-    llm = OpenAIPageExtractor(object(), profile_path=None)
+    from ade_app.config import PipelineConfig, RoutingSettings
+
+    llm = OpenAIPageExtractor(
+        object(),
+        profile_path=None,
+        config=PipelineConfig(routing=RoutingSettings(mode="selective")),
+    )
     extractor = HybridPageExtractor(llm, calibrated_routes={"local_text"})
     primary = extractor.extract_primary_from_layout(
         page, prepared, analysis, job_id="j", page_count=1
@@ -150,7 +156,7 @@ def test_unverified_local_table_must_use_visual_model() -> None:
         ],
         proposals=[],
     )
-    assert _region_inputs(analysis)[0].route == "terra"
+    assert _region_inputs(analysis)[0].route == "verification"
 
 
 def test_rejected_only_report_requires_review() -> None:
@@ -168,7 +174,7 @@ def test_rejected_only_report_requires_review() -> None:
                 page=1,
                 region_id="text-0",
                 box=Box(xmin=0, ymin=0, xmax=1, ymax=1),
-                route="luna",
+                route="primary",
                 candidate="candidate",
                 confidence=0,
             )

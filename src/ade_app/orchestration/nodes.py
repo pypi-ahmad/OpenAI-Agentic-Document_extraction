@@ -143,13 +143,13 @@ def validate_and_link(state: DocumentWorkflowState) -> Mapping[str, object]:
             raise RuntimeError("route_and_extract produced no hand-off")
         validation = state.operations.validate_and_link(state.extraction)
         retry_plan = validation.retry_plan
-        if retry_plan is not None and retry_plan.required and state.sol_retry_count == 0:
+        if retry_plan is not None and retry_plan.required and state.field_retry_count == 0:
             return {
                 "validation": validation,
                 "retry_plan": retry_plan,
-                "route_mode": "sol_retry",
-                "sol_retry_count": 1,
-                "next_action": "sol_retry",
+                "route_mode": "field_retry",
+                "field_retry_count": 1,
+                "next_action": "field_retry",
             }
         return {"validation": validation, "retry_plan": None, "next_action": "generate"}
 

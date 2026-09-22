@@ -5,7 +5,7 @@ against a calibrated logistic profile loaded from profiles/segment-quality-*.jso
 This module only computes the score and reasons — it must not decide routing;
 every segment with non-empty reasons (i.e. "uncalibrated") still requires
 independent verification by the caller regardless of its raw score. Next:
-openai_client.py, which turns this score into the luna/terra/sol routing
+openai_client.py, which turns this score into staged extraction routing
 decision.
 """
 
@@ -109,7 +109,7 @@ def load_quality_profile(
         raise RuntimeError(f"Calibrated quality profile is unavailable: {profile_path.resolve()}")
     profile = QualityProfile.model_validate_json(profile_path.read_text(encoding="utf-8"))
     if profile.profile_version not in {3, 4}:
-        raise RuntimeError("Quality profile v3 calibration is required for Terra routing")
+        raise RuntimeError("Quality profile v3 calibration is required for GPT-6 Sol routing")
     if (profile.model_id, profile.reasoning_effort) != expected_model:
         raise RuntimeError("Quality profile does not match the active verification model")
     return profile
