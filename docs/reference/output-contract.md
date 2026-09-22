@@ -1,7 +1,7 @@
 # Output contract
 
-The contract is discovered from local GroundTruth JSON/Markdown pairs and enforced by strict
-Pydantic models. Unknown fields and type coercion are rejected.
+Local GroundTruth JSON/Markdown pairs define the contract. Strict Pydantic models reject unknown
+fields and type coercion.
 
 ## JSON document
 
@@ -36,12 +36,12 @@ as `text-0`, `table-0`, and `table_cell-0`.
 - Headings and emphasis derive from semantic styles.
 - A final `<!-- doc_id=parse-… -->` identifies the parse job.
 
-The UI sanitizes Markdown for safe preview. Downloads contain the canonical Markdown, not a
-second UI representation.
+The UI sanitizes Markdown before preview. Downloads contain canonical Markdown.
 
 ## Manifests and failures
 
-Manifest schema v9 (v8 remains readable) records selected pages, model cascade, page/segment status, requests,
+Manifest schema v10 (v8/v9 remain readable) records selected pages, one model, medium reasoning,
+verification/repair flags, draft hashes, page/segment status, requests,
 usage, cost, timing, annotation limitations, policy hashes, data classification,
 `review_required`, and the explicit `review_state`. Usage includes input, cached-input,
 cache-write, output, and reasoning tokens; API, routing, and retry calls are counted separately.
@@ -61,3 +61,12 @@ and `0.0` for failed pages or documents containing a failed page.
 not probabilities. Independent agreement records verification without fabricating a percentage.
 Confidence reports use version `2.0`; version `1.1` remains readable. Rejected fields, missing
 evidence, unresolved coverage, failed pages and annotation limitations trigger review.
+
+## Unverified draft exports
+
+`<name>.draft.md` and `<name>.draft.json` preserve primary extraction before verification or repair.
+They are included in document and batch ZIPs. Draft JSON uses a separate `draft_schema_version: 1`,
+`artifact_kind: "unverified_draft"`, and `verification_status: "unverified"` contract, not v3.
+Each page contains its page-local extraction and ranges, or an explicit failure. Draft Markdown
+is labeled unverified. These exports are not accepted evidence and do not relax v3 redaction or
+null-field rules. Manifest `draft_sha256` hashes both draft representations.

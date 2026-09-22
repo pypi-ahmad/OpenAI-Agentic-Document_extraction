@@ -5036,13 +5036,13 @@
         <path data-edge-from="operator" data-edge-to="streamlit_ui" data-edge-label="authorized files" data-edge-key="0" data-edge-id="operator_uploads" data-composition-points="180,284;220,284" d="M 180 284 L 220 284" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <path data-edge-from="streamlit_ui" data-edge-to="input_imaging" data-edge-label="selected pages" data-edge-key="1" data-edge-id="ui_to_imaging" data-composition-points="370,284;410,284" d="M 370 284 L 410 284" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="input_imaging" data-edge-to="batch_pipeline" data-edge-label="RenderedPage" data-edge-key="2" data-edge-id="imaging_to_batch" data-composition-points="560,284;600,284" d="M 560 284 L 600 284" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="batch_pipeline" data-edge-to="terra_primary" data-edge-label="page image" data-edge-key="3" data-edge-id="batch_to_primary" data-composition-points="675,318;675,450" d="M 675 318 L 675 450" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="terra_primary" data-edge-to="quality_router" data-edge-label="semantic page" data-edge-key="4" data-edge-id="primary_to_quality" data-composition-points="750,486;770,486;770,284;790,284" d="M 750 486 L 762 486 Q 770 486 770 478 L 770 292 Q 770 284 778 284 L 790 284" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="batch_pipeline" data-edge-to="primary_extraction" data-edge-label="page image" data-edge-key="3" data-edge-id="batch_to_primary" data-composition-points="675,318;675,450" d="M 675 318 L 675 450" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="primary_extraction" data-edge-to="quality_router" data-edge-label="semantic page" data-edge-key="4" data-edge-id="primary_to_quality" data-composition-points="750,486;770,486;770,284;790,284" d="M 750 486 L 762 486 Q 770 486 770 478 L 770 292 Q 770 284 778 284 L 790 284" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="quality_router" data-edge-to="renderer" data-edge-label="accepted" data-edge-key="5" data-edge-id="quality_accept" data-composition-points="940,277;980,277" d="M 940 277 L 980 277" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="quality_router" data-edge-to="terra_consensus" data-edge-label="low-quality crop" data-edge-key="6" data-edge-id="quality_to_consensus" data-composition-points="865,318;865,450" d="M 865 318 L 865 450" class="a-security" stroke-width="1.5" marker-end="url(#arrowhead-security)"/>
-        <path data-edge-from="terra_consensus" data-edge-to="renderer" data-edge-label="agreement" data-edge-key="7" data-edge-id="consensus_agrees" data-composition-points="940,479;960,479;960,291;980,291" d="M 940 479 L 952 479 Q 960 479 960 471 L 960 299 Q 960 291 968 291 L 980 291" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="terra_consensus" data-edge-to="sol_resolution" data-edge-label="disputed fields" data-edge-key="8" data-edge-id="consensus_disputes" data-composition-points="940,493;980,493" d="M 940 493 L 980 493" class="a-security" stroke-width="1.5" marker-end="url(#arrowhead-security)"/>
-        <path data-edge-from="sol_resolution" data-edge-to="renderer" data-edge-label="patch or needs_review" data-edge-key="9" data-edge-id="sol_to_renderer" data-composition-points="1060,450;1060,318" d="M 1060 450 L 1060 318" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="quality_router" data-edge-to="segment_verification" data-edge-label="low-quality crop" data-edge-key="6" data-edge-id="quality_to_consensus" data-composition-points="865,318;865,450" d="M 865 318 L 865 450" class="a-security" stroke-width="1.5" marker-end="url(#arrowhead-security)"/>
+        <path data-edge-from="segment_verification" data-edge-to="renderer" data-edge-label="agreement" data-edge-key="7" data-edge-id="consensus_agrees" data-composition-points="940,479;960,479;960,291;980,291" d="M 940 479 L 952 479 Q 960 479 960 471 L 960 299 Q 960 291 968 291 L 980 291" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="segment_verification" data-edge-to="field_resolution" data-edge-label="disputed fields" data-edge-key="8" data-edge-id="consensus_disputes" data-composition-points="940,493;980,493" d="M 940 493 L 980 493" class="a-security" stroke-width="1.5" marker-end="url(#arrowhead-security)"/>
+        <path data-edge-from="field_resolution" data-edge-to="renderer" data-edge-label="patch or needs_review" data-edge-key="9" data-edge-id="sol_to_renderer" data-composition-points="1060,450;1060,318" d="M 1060 450 L 1060 318" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="renderer" data-edge-to="artifacts" data-edge-label="validated artifact" data-edge-key="10" data-edge-id="renderer_to_artifacts" data-composition-points="1140,284;1180,284" d="M 1140 284 L 1180 284" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <path data-edge-from="artifacts" data-edge-to="evaluation" data-edge-label="generated output" data-edge-key="11" data-edge-id="artifacts_to_evaluation" data-composition-points="1260,318;1260,342;1276,342;1276,576;1255,576;1255,600" d="M 1260 318 L 1260 334 Q 1260 342 1268 342 L 1268 342 Q 1276 342 1276 350 L 1276 568 Q 1276 576 1268 576 L 1263 576 Q 1255 576 1255 584 L 1255 600" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
         <path data-edge-from="groundtruth" data-edge-to="evaluation" data-edge-label="reference pairs" data-edge-key="12" data-edge-id="gt_to_evaluation" data-composition-points="940,636;1180,636" d="M 940 636 L 1180 636" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
@@ -5108,15 +5108,15 @@
         <text data-detail="context" x="865" y="298" class="t-muted" font-size="9" text-anchor="middle">Evidence + review state</text>
         </g>
 
-        <g id="node-renderer" data-node-id="renderer" data-node-label="Contract renderer" tabindex="0" role="button" aria-label="Focus Contract renderer, Strict JSON + Markdown, Architecture component" aria-pressed="false" data-node-kind="backend" data-node-sublabel="Strict JSON + Markdown" data-node-context="Architecture component">
-          <title>Contract renderer · Strict JSON + Markdown · Architecture component</title>
+        <g id="node-renderer" data-node-id="renderer" data-node-label="Contract renderer" tabindex="0" role="button" aria-label="Focus Contract renderer, Draft + verified output, Architecture component" aria-pressed="false" data-node-kind="backend" data-node-sublabel="Draft + verified output" data-node-context="Architecture component">
+          <title>Contract renderer · Draft + verified output · Architecture component</title>
           <rect x="980" y="250" width="160" height="68" rx="6" class="c-mask"/>
           <rect x="980" y="250" width="160" height="68" rx="6" class="c-backend" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(986 256) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
           <text data-node-label="" data-detail-anchor="" x="1060" y="282" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Contract renderer</text>
-        <text data-detail="context" x="1060" y="298" class="t-muted" font-size="9" text-anchor="middle">Strict JSON + Markdown</text>
+        <text data-detail="context" x="1060" y="298" class="t-muted" font-size="9" text-anchor="middle">Draft + verified output</text>
         </g>
 
         <g id="node-artifacts" data-node-id="artifacts" data-node-label="Review artifacts" tabindex="0" role="button" aria-label="Focus Review artifacts, PDF, ZIP, manifest, Architecture component" aria-pressed="false" data-node-kind="backend" data-node-sublabel="PDF, ZIP, manifest" data-node-context="Architecture component">
@@ -5130,40 +5130,40 @@
         <text data-detail="context" x="1260" y="298" class="t-muted" font-size="9" text-anchor="middle">PDF, ZIP, manifest</text>
         </g>
 
-        <g id="node-terra_primary" data-node-id="terra_primary" data-node-label="GPT-5.6 Terra" tabindex="0" role="button" aria-label="Focus GPT-5.6 Terra, Primary semantic read, OpenAI Responses API · store=false" aria-pressed="false" data-node-kind="cloud" data-node-sublabel="Primary semantic read" data-node-tag="medium effort" data-node-context="OpenAI Responses API · store=false">
-          <title>GPT-5.6 Terra · Primary semantic read · OpenAI Responses API · store=false · medium effort</title>
+        <g id="node-primary_extraction" data-node-id="primary_extraction" data-node-label="GPT-6 Sol" tabindex="0" role="button" aria-label="Focus GPT-6 Sol, Primary semantic read, OpenAI Responses API · store=false" aria-pressed="false" data-node-kind="cloud" data-node-sublabel="Primary semantic read" data-node-tag="medium effort" data-node-context="OpenAI Responses API · store=false">
+          <title>GPT-6 Sol · Primary semantic read · OpenAI Responses API · store=false · medium effort</title>
           <rect x="600" y="450" width="150" height="72" rx="6" class="c-mask"/>
           <rect x="600" y="450" width="150" height="72" rx="6" class="c-cloud" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="cloud" class="semantic-sigil s-cloud" transform="translate(606 456) scale(0.6875)">
             <path d="M4.3 12.5h7.3a2.4 2.4 0 0 0 .2-4.8 4 4 0 0 0-7.5-1.3A3.1 3.1 0 0 0 4.3 12.5Z"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="675" y="484" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">GPT-5.6 Terra</text>
+          <text data-node-label="" data-detail-anchor="" x="675" y="484" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">GPT-6 Sol</text>
         <text data-detail="context" x="675" y="500" class="t-muted" font-size="9" text-anchor="middle">Primary semantic read</text>
         <text data-detail="fine" x="675" y="514" class="t-cloud" font-size="7" text-anchor="middle">medium effort</text>
         </g>
 
-        <g id="node-terra_consensus" data-node-id="terra_consensus" data-node-label="GPT-5.6 Terra" tabindex="0" role="button" aria-label="Focus GPT-5.6 Terra, Independent crop read, OpenAI Responses API · store=false" aria-pressed="false" data-node-kind="cloud" data-node-sublabel="Independent crop read" data-node-tag="sub-threshold only" data-node-context="OpenAI Responses API · store=false">
-          <title>GPT-5.6 Terra · Independent crop read · OpenAI Responses API · store=false · sub-threshold only</title>
+        <g id="node-segment_verification" data-node-id="segment_verification" data-node-label="GPT-6 Sol" tabindex="0" role="button" aria-label="Focus GPT-6 Sol, Optional verification, OpenAI Responses API · store=false" aria-pressed="false" data-node-kind="cloud" data-node-sublabel="Optional verification" data-node-tag="off by default" data-node-context="OpenAI Responses API · store=false">
+          <title>GPT-6 Sol · Optional verification · OpenAI Responses API · store=false · off by default</title>
           <rect x="790" y="450" width="150" height="72" rx="6" class="c-mask"/>
           <rect x="790" y="450" width="150" height="72" rx="6" class="c-cloud" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="cloud" class="semantic-sigil s-cloud" transform="translate(796 456) scale(0.6875)">
             <path d="M4.3 12.5h7.3a2.4 2.4 0 0 0 .2-4.8 4 4 0 0 0-7.5-1.3A3.1 3.1 0 0 0 4.3 12.5Z"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="865" y="484" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">GPT-5.6 Terra</text>
-        <text data-detail="context" x="865" y="500" class="t-muted" font-size="9" text-anchor="middle">Independent crop read</text>
-        <text data-detail="fine" x="865" y="514" class="t-cloud" font-size="7" text-anchor="middle">sub-threshold only</text>
+          <text data-node-label="" data-detail-anchor="" x="865" y="484" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">GPT-6 Sol</text>
+        <text data-detail="context" x="865" y="500" class="t-muted" font-size="9" text-anchor="middle">Optional verification</text>
+        <text data-detail="fine" x="865" y="514" class="t-cloud" font-size="7" text-anchor="middle">off by default</text>
         </g>
 
-        <g id="node-sol_resolution" data-node-id="sol_resolution" data-node-label="GPT-5.6 Sol" tabindex="0" role="button" aria-label="Focus GPT-5.6 Sol, Disputed fields only, OpenAI Responses API · store=false" aria-pressed="false" data-node-kind="cloud" data-node-sublabel="Disputed fields only" data-node-tag="low effort" data-node-context="OpenAI Responses API · store=false">
-          <title>GPT-5.6 Sol · Disputed fields only · OpenAI Responses API · store=false · low effort</title>
+        <g id="node-field_resolution" data-node-id="field_resolution" data-node-label="GPT-6 Sol" tabindex="0" role="button" aria-label="Focus GPT-6 Sol, Optional field repair, OpenAI Responses API · store=false" aria-pressed="false" data-node-kind="cloud" data-node-sublabel="Optional field repair" data-node-tag="medium effort" data-node-context="OpenAI Responses API · store=false">
+          <title>GPT-6 Sol · Optional field repair · OpenAI Responses API · store=false · medium effort</title>
           <rect x="980" y="450" width="160" height="72" rx="6" class="c-mask"/>
           <rect x="980" y="450" width="160" height="72" rx="6" class="c-cloud" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="cloud" class="semantic-sigil s-cloud" transform="translate(986 456) scale(0.6875)">
             <path d="M4.3 12.5h7.3a2.4 2.4 0 0 0 .2-4.8 4 4 0 0 0-7.5-1.3A3.1 3.1 0 0 0 4.3 12.5Z"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="1060" y="484" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">GPT-5.6 Sol</text>
-        <text data-detail="context" x="1060" y="500" class="t-muted" font-size="9" text-anchor="middle">Disputed fields only</text>
-        <text data-detail="fine" x="1060" y="514" class="t-cloud" font-size="7" text-anchor="middle">low effort</text>
+          <text data-node-label="" data-detail-anchor="" x="1060" y="484" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">GPT-6 Sol</text>
+        <text data-detail="context" x="1060" y="500" class="t-muted" font-size="9" text-anchor="middle">Optional field repair</text>
+        <text data-detail="fine" x="1060" y="514" class="t-cloud" font-size="7" text-anchor="middle">medium effort</text>
         </g>
 
         <g id="node-evaluation" data-node-id="evaluation" data-node-label="Evaluation" tabindex="0" role="button" aria-label="Focus Evaluation, Measured comparison, Architecture component" aria-pressed="false" data-node-kind="backend" data-node-sublabel="Measured comparison" data-node-context="Architecture component">
@@ -5202,11 +5202,11 @@
           <rect x="546.2" y="236" width="67.6" height="14" rx="3" class="c-mask"/>
           <text x="580" y="246" class="t-muted" font-size="8" text-anchor="middle">RenderedPage</text>
         </g>
-        <g data-detail="context" data-edge-from="batch_pipeline" data-edge-to="terra_primary" data-edge-label="page image" data-edge-key="3" data-edge-id="batch_to_primary">
+        <g data-detail="context" data-edge-from="batch_pipeline" data-edge-to="primary_extraction" data-edge-label="page image" data-edge-key="3" data-edge-id="batch_to_primary">
           <rect x="646" y="322" width="58" height="14" rx="3" class="c-mask"/>
           <text x="675" y="332" class="t-muted" font-size="8" text-anchor="middle">page image</text>
         </g>
-        <g data-detail="context" data-edge-from="terra_primary" data-edge-to="quality_router" data-edge-label="semantic page" data-edge-key="4" data-edge-id="primary_to_quality">
+        <g data-detail="context" data-edge-from="primary_extraction" data-edge-to="quality_router" data-edge-label="semantic page" data-edge-key="4" data-edge-id="primary_to_quality">
           <rect x="733.8" y="365" width="72.4" height="14" rx="3" class="c-mask"/>
           <text x="770" y="375" class="t-muted" font-size="8" text-anchor="middle">semantic page</text>
         </g>
@@ -5214,19 +5214,19 @@
           <rect x="935.8" y="236" width="48.4" height="14" rx="3" class="c-mask"/>
           <text x="960" y="246" class="t-muted" font-size="8" text-anchor="middle">accepted</text>
         </g>
-        <g data-detail="context" data-edge-from="quality_router" data-edge-to="terra_consensus" data-edge-label="low-quality crop" data-edge-key="6" data-edge-id="quality_to_consensus">
+        <g data-detail="context" data-edge-from="quality_router" data-edge-to="segment_verification" data-edge-label="low-quality crop" data-edge-key="6" data-edge-id="quality_to_consensus">
           <rect x="821.6" y="322" width="86.8" height="14" rx="3" class="c-mask"/>
           <text x="865" y="332" class="t-security" font-size="8" text-anchor="middle">low-quality crop</text>
         </g>
-        <g data-detail="context" data-edge-from="terra_consensus" data-edge-to="renderer" data-edge-label="agreement" data-edge-key="7" data-edge-id="consensus_agrees">
+        <g data-detail="context" data-edge-from="segment_verification" data-edge-to="renderer" data-edge-label="agreement" data-edge-key="7" data-edge-id="consensus_agrees">
           <rect x="933.4" y="365" width="53.199999999999996" height="14" rx="3" class="c-mask"/>
           <text x="960" y="375" class="t-messagebus" font-size="8" text-anchor="middle">agreement</text>
         </g>
-        <g data-detail="context" data-edge-from="terra_consensus" data-edge-to="sol_resolution" data-edge-label="disputed fields" data-edge-key="8" data-edge-id="consensus_disputes">
+        <g data-detail="context" data-edge-from="segment_verification" data-edge-to="field_resolution" data-edge-label="disputed fields" data-edge-key="8" data-edge-id="consensus_disputes">
           <rect x="919" y="526" width="82" height="14" rx="3" class="c-mask"/>
           <text x="960" y="536" class="t-security" font-size="8" text-anchor="middle">disputed fields</text>
         </g>
-        <g data-detail="context" data-edge-from="sol_resolution" data-edge-to="renderer" data-edge-label="patch or needs_review" data-edge-key="9" data-edge-id="sol_to_renderer">
+        <g data-detail="context" data-edge-from="field_resolution" data-edge-to="renderer" data-edge-label="patch or needs_review" data-edge-key="9" data-edge-id="sol_to_renderer">
           <rect x="1004.6" y="430" width="110.8" height="14" rx="3" class="c-mask"/>
           <text x="1060" y="440" class="t-muted" font-size="8" text-anchor="middle">patch or needs_review</text>
         </g>
@@ -5480,8 +5480,8 @@
           <h3>Quality-gated routing</h3>
         </div>
         <ul>
-          <li>&bull; Independent Terra rereads uncertain segments</li>
-          <li>&bull; Sol receives only field-level disagreements</li>
+          <li>&bull; Optional verification rereads uncertain segments</li>
+          <li>&bull; Optional repair rereads flagged fields</li>
           <li>&bull; Unresolved evidence becomes needs_review</li>
         </ul>
       </div>
@@ -5492,7 +5492,7 @@
           <h3>Measured outputs</h3>
         </div>
         <ul>
-          <li>&bull; Strict JSON and deterministic Markdown</li>
+          <li>&bull; Unverified drafts and fail-closed v3 output</li>
           <li>&bull; Annotated PDF and manifests preserve review evidence</li>
           <li>&bull; Accuracy claims require mapped GroundTruth evaluation</li>
         </ul>

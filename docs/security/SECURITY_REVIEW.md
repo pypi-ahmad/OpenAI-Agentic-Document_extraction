@@ -37,7 +37,7 @@ process.
 | SEC-005 | Low (CVSS 3.1) | CWE-77 | Document-borne prompt instructions were not explicitly separated from extraction commands | Resolved, defense-in-depth |
 | SEC-006 | Medium (CVSS 4.6) | CWE-359 | Evaluation writes potentially sensitive artifacts without explicit acknowledgement | Resolved; retention remains operational |
 
-### SEC-001 — bounded consumption
+### SEC-001: bounded consumption
 
 Model-facing arrays have evidence-based upper bounds in `src/ade_app/models.py`, document
 parallelism is capped by `MAX_FILE_WORKERS` in `src/ade_app/batch.py`, and repair output is bounded
@@ -45,32 +45,32 @@ by constants in `src/ade_app/openai_client.py`. No more than 16 segments per pag
 overflow is retained as `needs_review` with `repair_budget_exhausted` rather than silently
 truncated.
 
-### SEC-002 — decoder boundary
+### SEC-002: decoder boundary
 
 PDF open and rendering failures are normalized to content-safe validation errors by
 `get_page_count` and `rasterize_document` in `src/ade_app/raster.py`. Password protection, page
 bounds, dimensions, file size, image format, and raster pixels remain fail-closed.
 
-### SEC-003 — launcher ownership
+### SEC-003: launcher ownership
 
 Before termination, `scripts/launch.ps1` verifies both the project virtual-environment interpreter
 path and Streamlit app in the process command line. An unrelated owner causes a readable failure
 and is not terminated.
 
-### SEC-004 — safe failure handling
+### SEC-004: safe failure handling
 
 The `is_loopback_address` startup check stops the UI when Streamlit is not configured for
 loopback, and unexpected processing errors are mapped to a generic message in `streamlit_app.py`.
 Runtime assertions on security-relevant execution paths were replaced with explicit exceptions.
 
-### SEC-005 — prompt injection boundary
+### SEC-005: prompt injection boundary
 
 All active prompts explicitly classify visible instructions as untrusted document text. Enforcement
 still comes from code: the model has no tools, outputs must pass strict Pydantic schemas, and the
 application deterministically renders validated data. Prompt wording is not treated as a security
 boundary.
 
-### SEC-006 — sensitive evaluation output
+### SEC-006: sensitive evaluation output
 
 The evaluation CLI requires `--acknowledge-sensitive-output` before `run_evaluation` creates a run
 directory. Evaluation directories and common secret/private-key files are Git-ignored. The

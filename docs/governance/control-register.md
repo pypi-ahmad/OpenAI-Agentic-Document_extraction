@@ -6,7 +6,7 @@ Evidence statuses: observed, partial, not evidenced, out of scope
 
 | Domain | Status | Evidence and limitation | Proof needed next |
 |---|---|---|---|
-| AI system inventory | Partial | One app, one OpenAI provider, Terra/Sol models, prompts, and local lifecycle artifacts are inventoried. Business owner, deployment inventory, users, affected population, approval, and retirement status are not evidenced. | Named owner and deployment register. |
+| AI system inventory | Partial | One app, one OpenAI provider, GPT-6 Sol models, prompts, and local lifecycle artifacts are inventoried. Business owner, deployment inventory, users, affected population, approval, and retirement status are not evidenced. | Named owner and deployment register. |
 | Data classification and tool boundaries | Partial | Inputs are classified as potentially sensitive; official endpoints, `store=False`, loopback binding, ignored secrets, and no result caching are evidenced. Contract/BAA, access enforcement, retention, and approved storage are external. | Privacy/security owner approvals and operating configuration. |
 | Acceptable use | Partial | Repository policy defines allowed, restricted, and prohibited uses; UI requires authorization acknowledgement. Organizational adoption, exception handling, and sanctions are not evidenced. | Approved policy and exception owner. |
 | Review and validation | Partial | Strict schemas, fail-closed review states, GroundTruth metrics, tests, and change gates are evidenced. Authenticated reviewer approval and production outcome validation are absent. | Reviewer workflow and signed validation record. |

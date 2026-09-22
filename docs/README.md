@@ -1,40 +1,40 @@
 # Documentation
 
-Choose the document that matches what you are trying to do.
+Choose the document for your task.
 
 ## Learn
 
-- [First extraction](tutorials/first-extraction.md) — install, launch, process one document, and
+- [First extraction](tutorials/first-extraction.md): install, launch, process one document, and
   inspect the result.
 
-## Complete a task
+## Use the app or tools
 
-- [Use the Streamlit app](how-to/use-the-app.md) — batches, page selection, progress, downloads,
+- [Use the Streamlit app](how-to/use-the-app.md): batches, page selection, progress, downloads,
   human review, and Reset.
-- [Evaluate against GroundTruth](how-to/evaluate-groundtruth.md) — profile mappings, run curated
+- [Evaluate against GroundTruth](how-to/evaluate-groundtruth.md): profile mappings, run curated
   or full evaluations, interpret metrics, and calibrate routing.
-- [Develop and validate changes](how-to/develop-and-test.md) — managed environment, project
+- [Develop and validate changes](how-to/develop-and-test.md): managed environment, project
   boundaries, focused checks, prompt changes, and contract-safe development.
-- [Troubleshooting](troubleshooting.md) — startup, credentials, uploads, partial results, and slow
+- [Troubleshooting](troubleshooting.md): startup, credentials, uploads, partial results, and slow
   runs.
-- [Operations runbook](RUNBOOK.md) — startup, shutdown, common error strings, and logging.
-- [Contributing](CONTRIBUTING.md) — development setup and verification commands.
+- [Operations runbook](RUNBOOK.md): startup, shutdown, common error strings, and logging.
+- [Contributing](CONTRIBUTING.md): development setup and verification commands.
 
-## Understand the system
+## Understand ADE
 
-- [Architecture](ARCHITECTURE.md) — request/data flow, main types, and external systems.
-- [Technical details](TECHNICAL.md) — stack, invariants, error handling, and persistence.
-- [Architecture explanation](explanation/architecture.md) — request flow, model routing, deterministic output,
+- [Architecture](ARCHITECTURE.md): request/data flow, main types, and external systems.
+- [Technical details](TECHNICAL.md): stack, invariants, error handling, and persistence.
+- [Architecture explanation](explanation/architecture.md): request flow, model routing, deterministic output,
   concurrency, privacy, and trust boundaries.
 
-## Look something up
+## Reference
 
-- [Configuration and commands](reference/configuration.md) — limits, environment, CLI arguments,
+- [Configuration and commands](reference/configuration.md): limits, environment, CLI arguments,
   models, pricing, and launch behavior.
-- [Output contract](reference/output-contract.md) — JSON fields, Markdown conventions, ZIP
+- [Output contract](reference/output-contract.md): JSON fields, Markdown conventions, ZIP
   contents, validation, and failure representation.
-- [Python API](reference/python-api.md) — supported programmatic entry points and core types.
-- [Documentation coverage](reference/documentation-coverage.md) — measured scope and known gaps.
+- [Python API](reference/python-api.md): supported programmatic entry points and core types.
+- [Documentation coverage](reference/documentation-coverage.md): measured scope and known gaps.
 
 ## Governance and engineering evidence
 

@@ -2,8 +2,8 @@
 
 Run `uv run --frozen pytest --cov`, `uv run --frozen ruff check .`, and
 `uv run --frozen ty check`. Unit tests cover schemas, routing helpers, rendering, packaging,
-session reset, cost, inputs, rasterization, and evaluation. Credentialed OCR accuracy is
-measured separately with `ade-evaluate`.
+session reset, cost, inputs, rasterization, and evaluation. Use `ade-evaluate` separately for
+credentialed OCR accuracy.
 
 ## Evidence
 

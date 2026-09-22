@@ -60,10 +60,9 @@ monitoring, incident records, and any downstream use of extracted output.
 
 ## Sources
 
-Primary authorities are intentionally not asserted as binding because applicability is unknown
-and no adverse-decision path exists. Contextual governance sources:
+Applicability is unknown and the app has no adverse-decision path, so this review does not treat
+the following primary authorities as binding. They provide governance context:
 
 - NIST AI RMF Core: <https://airc.nist.gov/airmf-resources/airmf/5-sec-core/>
 - NAIC Model Bulletin on AI Systems by Insurers:
   <https://content.naic.org/sites/default/files/inline-files/2023-12-4%20Model%20Bulletin_Adopted_0.pdf>
-

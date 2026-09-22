@@ -1,6 +1,6 @@
 # Stack
 
-Python 3.14, uv, Streamlit, OpenAI Responses API, Pydantic, Pillow, and PyMuPDF. Pytest,
+Python 3.13.15 (`>=3.13.15,<3.14`), uv, Streamlit, OpenAI Responses API, Pydantic, Pillow, and PyMuPDF. Pytest,
 coverage, Ruff, and ty provide local verification. Dependency metadata lives in
 `pyproject.toml`; `uv.lock` is authoritative.
 

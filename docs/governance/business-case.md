@@ -8,10 +8,10 @@ evidence gate below is satisfied.
 
 ## Current-state evidence
 
-Repository controls provide strict extraction schemas, quality routing, human-review flags,
-provenance, cost/usage capture, security-conscious local defaults, evaluation tooling, and
-documented boundaries. Ownership, organizational adoption, reviewer operations, training,
-contracts, retention, incident handling, and production monitoring are not evidenced. See the
+Repository controls include strict extraction schemas, quality routing, human-review flags,
+provenance, cost and usage capture, local security defaults, evaluation tooling, and documented
+boundaries. Ownership, organizational adoption, reviewer operations, training, contracts,
+retention, incident handling, and production monitoring are not evidenced. See the
 [control register](control-register.md).
 
 ## Economics
@@ -36,9 +36,9 @@ benefits.
 
 ## Risk and value drivers
 
-The evidenced mechanisms are fewer silent extraction failures, reproducible output provenance,
-measured model cost, and a defined validation gate. Their financial value is unknown until the
-organization measures baseline effort, review burden, error materiality, and adoption.
+The repository provides controls for silent extraction failures, output provenance, model cost,
+and validation. Their financial value remains unknown until the organization measures baseline
+effort, review burden, error materiality, and adoption.
 
 ## Governance-first discovery roadmap
 

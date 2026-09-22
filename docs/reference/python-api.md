@@ -1,9 +1,9 @@
 # Python API reference
 
-The Streamlit app and console scripts are supported user entry points. Python modules are internal
-application APIs and may evolve; these are the principal integration surfaces.
+The Streamlit app and console scripts are supported entry points. Python modules are internal
+application APIs and may change. This page lists the main integration surfaces.
 
-Minimal local input inspection requires no OpenAI request:
+Inspect local input without an OpenAI request:
 
 ```python
 from pathlib import Path
@@ -32,7 +32,7 @@ returns sorted, deduplicated pages and raises `ValueError` for malformed or out-
 
 Returns the PDF page count or 1 for an image. Invalid input raises `ValueError`.
 
-### `rasterize_document(source, pages, dpi=200) -> Iterator[RenderedPage]`
+### `rasterize_document(source, pages, dpi=300) -> Iterator[RenderedPage]`
 
 Yields requested pages as PNG-backed values with dimensions and source page numbers. DPI is
 reduced when necessary to remain within image limits. Callers that need repeated iteration must
@@ -44,8 +44,8 @@ materialize the iterator themselves.
 
 Protocol accepted by `extract_document` and `extract_documents`. Its `extract` method receives a
 `RenderedPage` plus the parse job ID and source page count, and returns a validated
-`PageResponse`. `OpenAIPageExtractor` is the production implementation; tests can supply a local
-fake without making a network request.
+`PageResponse`. The production factory returns `HybridPageExtractor`, which wraps
+`OpenAIPageExtractor` with local layout analysis. Tests can supply a local fake without a network request.
 
 ### `BatchDocument(item_id, source, pages)`
 
@@ -55,30 +55,51 @@ validation also enforces aggregate file, byte, page, and raster-pixel limits.
 
 ### `OpenAIPageExtractor`
 
-Production extractor around the Responses parser. It performs structured semantic extraction,
-validation, quality assessment, and targeted repair while capturing request IDs and usage.
-Construct its parser with `build_responses_parser(resolve_api_key())`; construction is local, but
-calling extraction sends selected page images to OpenAI and requires the calibrated quality
-profile.
+The model-facing extractor performs structured semantic extraction, validation, quality assessment,
+and optional verification/repair while capturing request IDs and usage. Every request uses
+`gpt-6-sol` with medium reasoning. Missing or incompatible calibration disables automatic
+acceptance; it does not prevent extraction.
+
+Use `ade_app.runner.create_extractor(config)` for the shared production path. Use the same
+`PipelineConfig` when constructing the extractor and calling the pipeline. `[stages]` defaults
+to verification off and repair off. Credentials come from the environment or an explicitly
+supplied in-memory key; extraction sends selected page images to OpenAI.
+
+### `run_pipeline(source, pages, config=None) -> PipelineResult`
+
+The UI, CLI, and evaluation share the extractor factory in `ade_app.runner`. `run_pipeline`
+constructs that extractor and returns `complete`, `partial`, or `failed`, with an optional
+`ExtractionRun`, issues, and a report. Expected processing errors become failure reports.
 
 ### `extract_document(source, pages, extractor, ...) -> ExtractionRun`
 
 Runs rasterization, extraction, strict assembly, deterministic rendering, annotation, and
 packaging. It preserves successful pages after page-level failures. Bad configuration raises
 `ValueError`; unrecoverable errors use `DocumentExtractionError` with partial usage/page records.
+Pass `config=` to select stage settings. The compatibility argument `retry_failed_fields`, when
+provided, overrides repair for pipeline orchestration; keep it consistent with the extractor's config.
 
 ### `extract_documents(documents, extractor, ...) -> BatchExtractionRun`
 
 Runs 1–20 `BatchDocument` values with bounded file concurrency. It enforces file, byte, and page
 limits and returns results in input order, including document-level failure records.
+Pass the same `config=` used to construct the shared extractor.
+
+### `ExtractionRun` and `DraftDocument`
+
+`ExtractionRun` exposes the verified artifact, JSON, confidence report, annotated PDF, manifest,
+and ZIP, plus `draft_markdown`, `draft_json_text`, draft filenames, and `draft_files`.
+`ade_app.drafts.DraftDocument` is a separate unverified schema, not an `ExtractionDocumentV3`.
+Its page extraction ranges are page-local. See the [output contract](output-contract.md).
 
 ## Models and validation
 
 ### `GroundTruthDocument`
 
-Strict final artifact model. `model_validate_json(text)` validates JSON and `model_dump_json()`
+Strict structural base artifact model. `model_validate_json(text)` validates JSON and `model_dump_json()`
 serializes it. Cross-field validators enforce page order, ranges, IDs, grounding containment,
-failed-page consistency, and Markdown length.
+failed-page consistency, and Markdown length. New verified exports use `ExtractionDocumentV3`,
+which adds nullable field values and verification evidence.
 
 ### `SemanticPageExtraction`
 
@@ -106,5 +127,6 @@ Create in-memory ZIP files. Duplicate batch folders raise `ValueError`.
 - `ade-profile` → `ade_app.profile:main`
 - `ade-evaluate` → `ade_app.evaluation:main`
 - `ade-calibrate-quality` → `ade_app.calibration:main`
+- `ade-extract` → `ade_app.cli:main`
 
 Use each command's `--help` output as the definitive argument reference.
