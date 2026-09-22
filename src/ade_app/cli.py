@@ -1,130 +1,54 @@
-"""Command-line interface entry point for single document extraction.
-
-Responsible for parsing arguments (`ade-extract`), configuring logging, loading TOML config,
-invoking `run_pipeline`, writing output artifacts (Markdown, JSON, PDF, Manifest) to disk,
-and returning process exit codes (0=complete, 1=partial/review required, 2=failed).
-Must NOT execute pipeline operations directly; delegates to ade_app.runner.
-Next: ade_app.runner for high-level pipeline execution.
-"""
-
-from __future__ import annotations
+"""Command-line entry point for parse-only document conversion."""
 
 import argparse
-import json
-import os
-import sys
-import tempfile
-from collections.abc import Sequence
 from pathlib import Path
 
-from ade_app.config import PipelineConfig
+from ade_app.artifacts import build_artifacts
 from ade_app.inputs import DocumentInput, parse_page_range
-from ade_app.logging import configure_logging
-from ade_app.raster import get_page_count
-from ade_app.runner import PipelineResult, run_pipeline
+from ade_app.models import DocumentResult
+from ade_app.parser import parse_document, resolve_api_key
+from ade_app.raster import page_count
 
 
-def _parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Extract a PDF or image into reviewable artifacts")
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Parse a scanned PDF or image with GPT-6 Sol")
     parser.add_argument("input", type=Path)
+    parser.add_argument("--pages", default="")
     parser.add_argument("--output-dir", type=Path)
-    parser.add_argument("--config", type=Path)
-    parser.add_argument("--verification", action=argparse.BooleanOptionalAction, default=None)
-    parser.add_argument("--repair", action=argparse.BooleanOptionalAction, default=None)
-    parser.add_argument("--pages", default="", help="1-based pages, for example 1,3-5")
-    parser.add_argument("--dpi", type=int)
-    parser.add_argument("--device", choices=("auto", "gpu", "cpu"))
-    parser.add_argument("--max-workers", type=int)
-    parser.add_argument("--log-level", choices=("DEBUG", "INFO", "WARNING", "ERROR"))
-    parser.add_argument("--log-format", choices=("text", "json"))
     parser.add_argument("--overwrite", action="store_true")
-    return parser
-
-
-def _settings(args: argparse.Namespace) -> PipelineConfig:
-    config = PipelineConfig.from_toml(args.config) if args.config else PipelineConfig()
-    stages = {
-        name: getattr(args, name)
-        for name in ("verification", "repair")
-        if getattr(args, name) is not None
-    }
-    if stages:
-        config = config.model_copy(update={"stages": config.stages.model_copy(update=stages)})
-    if args.dpi is not None:
-        config = config.model_copy(
-            update={"imaging": config.imaging.model_copy(update={"dpi": args.dpi})}
-        )
-    if args.device is not None:
-        config = config.model_copy(
-            update={"layout": config.layout.model_copy(update={"device": args.device})}
-        )
-    if args.max_workers is not None:
-        config = config.model_copy(
-            update={
-                "runtime": config.runtime.model_copy(update={"max_page_workers": args.max_workers})
-            }
-        )
-    logging_updates = {
-        key: value
-        for key, value in (("level", args.log_level), ("format", args.log_format))
-        if value is not None
-    }
-    if logging_updates:
-        config = config.model_copy(
-            update={"logging": config.logging.model_copy(update=logging_updates)}
-        )
-    return PipelineConfig.model_validate(config.model_dump())
-
-
-def _atomic_write(path: Path, data: bytes, *, overwrite: bool) -> None:
-    if path.exists() and not overwrite:
-        raise FileExistsError(f"output already exists: {path}")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(
-        dir=path.parent, prefix=f".{path.name}.", delete=False
-    ) as stream:
-        temporary = Path(stream.name)
-        stream.write(data)
-    try:
-        os.replace(temporary, path)
-    except BaseException:
-        temporary.unlink(missing_ok=True)
-        raise
-
-
-def _write_result(result: PipelineResult, directory: Path, *, overwrite: bool) -> None:
-    if result.run is None:
-        _atomic_write(
-            directory / "failure-report.json", result.report_text.encode(), overwrite=overwrite
-        )
-        return
-    run = result.run
+    args = parser.parse_args()
+    source = DocumentInput(args.input.name, args.input.read_bytes())
+    pages = parse_page_range(args.pages, page_count(source))
+    document, assets, rendered = parse_document(source, pages, api_key=resolve_api_key())
+    artifacts = build_artifacts(document, assets, rendered)
+    directory = args.output_dir or args.input.with_name(f"{args.input.stem}.outputs")
+    directory.mkdir(parents=True, exist_ok=True)
     outputs = {
-        run.markdown_filename: run.artifact.markdown.encode(),
-        run.json_filename: run.json_text.encode(),
-        run.confidence_filename: run.confidence_text.encode(),
-        run.annotated_pdf_filename: run.annotated_pdf,
-        "manifest.json": json.dumps(run.manifest, indent=2).encode(),
-        run.zip_filename: run.zip_bytes,
-        **{name: value.encode() for name, value in run.draft_files.items()},
+        artifacts.markdown_name: artifacts.markdown.encode(),
+        artifacts.json_name: artifacts.json_text.encode(),
+        artifacts.html_name: artifacts.html.encode(),
+        artifacts.pdf_name: artifacts.annotated_pdf,
+        artifacts.zip_name: artifacts.zip_bytes,
     }
-    for filename, data in outputs.items():
-        _atomic_write(directory / filename, data, overwrite=overwrite)
+    _write_outputs(directory, outputs, overwrite=args.overwrite)
+    print(directory)
+    return _exit_code(document)
 
 
-def main(argv: Sequence[str] | None = None) -> int:
-    args = _parser().parse_args(argv)
-    try:
-        config = _settings(args)
-        configure_logging(config.logging)
-        data = args.input.read_bytes()
-        source = DocumentInput(args.input.name, data)
-        pages = parse_page_range(args.pages, get_page_count(source))
-        result = run_pipeline(source, pages, config=config)
-        output_dir = args.output_dir or args.input.with_name(f"{args.input.stem}.outputs")
-        _write_result(result, output_dir, overwrite=args.overwrite)
-    except (OSError, ValueError) as error:
-        print(f"ade-extract: {error}", file=sys.stderr)
+def _write_outputs(directory: Path, outputs: dict[str, bytes], *, overwrite: bool) -> None:
+    paths = {name: directory / name for name in outputs}
+    if not overwrite:
+        existing = next((path for path in paths.values() if path.exists()), None)
+        if existing is not None:
+            raise FileExistsError(f"output already exists: {existing}")
+    for name, data in outputs.items():
+        paths[name].write_bytes(data)
+
+
+def _exit_code(document: DocumentResult) -> int:
+    statuses = {page.status for page in document.pages}
+    if "failed" in statuses:
         return 1
-    print(output_dir)
-    return {"complete": 0, "partial": 2, "failed": 1}[result.status]
+    if "partial" in statuses:
+        return 2
+    return 0

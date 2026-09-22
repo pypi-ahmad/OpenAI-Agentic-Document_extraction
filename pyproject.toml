@@ -4,63 +4,35 @@ build-backend = "uv_build"
 
 [project]
 name = "ade-app"
-version = "0.1.0"
-description = "Local Streamlit document extraction using OpenAI GPT-6 Sol"
+version = "0.2.0"
+description = "GPT-6 Sol scanned-document parser producing layout-aware Markdown"
 requires-python = ">=3.13.15,<3.14"
 dependencies = [
+  "markdown-it-py>=4.0.0",
+  "nh3>=0.3.2",
   "openai>=3.6.0",
-  "opencv-contrib-python==5.0.0.93",
-  "paddleocr==3.7.0",
   "pillow>=12.3.0",
   "pydantic>=2.13.5",
   "pymupdf>=1.28.2",
-  "langgraph>=1.0.8,<2",
   "streamlit[pdf]>=1.62.0",
-  "paddlex[ocr]==3.7.2",
-]
-
-[project.optional-dependencies]
-cpu = ["paddlepaddle==3.3.0"]
-gpu = [
-  "paddlepaddle-gpu @ https://paddle-whl.bj.bcebos.com/stable/cu129/paddlepaddle-gpu/paddlepaddle_gpu-3.3.0-cp313-cp313-win_amd64.whl",
-]
-
-[dependency-groups]
-dev = [
-  "pytest>=9.1.1",
-  "pytest-cov>=7.1.0",
-  "ruff>=0.16.5",
-  "ty>=0.0.76",
 ]
 
 [project.scripts]
-ade-evaluate = "ade_app.evaluation:main"
-ade-calibrate-quality = "ade_app.calibration:main"
-ade-profile = "ade_app.profile:main"
-ade-extract = "ade_app.cli:main"
+ade-parse = "ade_app.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=9.1.1", "pytest-cov>=7.1.0", "ruff>=0.16.5", "ty>=0.0.76"]
 
 [tool.pytest.ini_options]
-addopts = "-q"
 testpaths = ["tests"]
+addopts = "-q"
 
 [tool.ruff]
-line-length = 100
 target-version = "py313"
+line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
 
-[tool.ruff.format]
-line-ending = "lf"
-
 [tool.ty.environment]
 python-version = "3.13"
-
-[tool.uv]
-override-dependencies = ["opencv-contrib-python==5.0.0.93"]
-conflicts = [
-  [
-    { extra = "cpu" },
-    { extra = "gpu" },
-  ],
-]
