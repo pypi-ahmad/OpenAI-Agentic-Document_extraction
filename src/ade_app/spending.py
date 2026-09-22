@@ -129,13 +129,11 @@ class BudgetedResponses:
     def __init__(self, responses: Any, ledger: SpendLedger, config: PipelineConfig) -> None:
         self.responses = responses
         self.ledger = ledger
-        self.models = {
-            m.name: m for m in (config.models.luna, config.models.terra, config.models.sol)
-        }
+        self.models = {m.name: m for m in (config.model,)}
 
     def parse(self, **kwargs: Any) -> Any:
         model = kwargs["model"]
-        if model not in {"gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol"}:
+        if model != "gpt-6-sol":
             raise SpendingStopped("verified cost rules unavailable for configured model")
         count_args = {
             key: kwargs[key]
@@ -158,8 +156,7 @@ class BudgetedResponses:
         if type(count) is not int or not 0 <= count <= 922_000:
             raise SpendingStopped("invalid input-token preflight")
         settings = self.models[model]
-        defaults = PipelineConfig().models
-        verified = next(m for m in (defaults.luna, defaults.terra, defaults.sol) if m.name == model)
+        verified = PipelineConfig().model
         long_context = count > 272_000
         # Include cache-write premium and the documented regional endpoint uplift.
         input_rate = max(

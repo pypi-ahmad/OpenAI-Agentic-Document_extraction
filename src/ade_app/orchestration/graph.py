@@ -63,7 +63,7 @@ def build_document_graph() -> Any:
     graph.add_conditional_edges(
         "validate_and_link",
         next_after_stage,
-        {"sol_retry": "route_and_extract", "generate": "generate_outputs", "error": END},
+        {"field_retry": "route_and_extract", "generate": "generate_outputs", "error": END},
     )
     graph.add_edge("generate_outputs", END)
     return graph.compile()

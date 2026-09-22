@@ -1,4 +1,4 @@
-"""Token usage accounting and official standard-tier GPT-5.6 model pricing.
+"""Token usage accounting and standard-tier GPT-6 Sol model pricing.
 
 Responsible for tracking token counters (input, cached, write, output, reasoning),
 validating token invariants, and computing exact USD costs using model rate cards.
@@ -12,21 +12,27 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
+from ade_app.config import ModelSettings
+
 if TYPE_CHECKING:
     from ade_app.config import PipelineConfig
 
 ONE_MILLION = Decimal(1_000_000)
+_DEFAULT_RATES = ModelSettings()
 MODEL_RATES = {
-    "gpt-5.6-luna": (Decimal("0.20"), Decimal("0.02"), Decimal("0.25"), Decimal("1.20")),
-    "gpt-5.6-terra": (Decimal("2.00"), Decimal("0.20"), Decimal("2.50"), Decimal("12.00")),
-    "gpt-5.6-sol": (Decimal("4.00"), Decimal("0.40"), Decimal("5.00"), Decimal("20.00")),
+    "gpt-6-sol": (
+        _DEFAULT_RATES.input_rate,
+        _DEFAULT_RATES.cached_input_rate,
+        _DEFAULT_RATES.cache_write_rate,
+        _DEFAULT_RATES.output_rate,
+    )
 }
 
 
 def configure_model_rates(config: PipelineConfig) -> None:
     """Install validated rates for the active process configuration."""
 
-    for model in (config.models.luna, config.models.terra, config.models.sol):
+    for model in (config.model,):
         MODEL_RATES[model.name] = (
             model.input_rate,
             model.cached_input_rate,
@@ -36,7 +42,7 @@ def configure_model_rates(config: PipelineConfig) -> None:
 
 
 # Backward-compatible aliases used by the evaluation report.
-INPUT_RATE, CACHED_INPUT_RATE, CACHE_WRITE_RATE, OUTPUT_RATE = MODEL_RATES["gpt-5.6-terra"]
+INPUT_RATE, CACHED_INPUT_RATE, CACHE_WRITE_RATE, OUTPUT_RATE = MODEL_RATES["gpt-6-sol"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -86,7 +92,7 @@ class TokenUsage:
         )
 
 
-def calculate_cost(usage: TokenUsage, model: str = "gpt-5.6-terra") -> Decimal:
+def calculate_cost(usage: TokenUsage, model: str = "gpt-6-sol") -> Decimal:
     """Calculate USD using the configured model's official rates."""
 
     try:

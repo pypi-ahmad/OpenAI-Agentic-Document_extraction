@@ -299,7 +299,7 @@ def apply_postprocessing_resolutions(
     *,
     review_threshold: float = 75.0,
 ) -> ExtractionDocumentV2:
-    """Apply bounded Sol decisions, then re-run deterministic validation."""
+    """Apply bounded repair decisions, then re-run deterministic validation."""
 
     fields = apply_field_resolutions(
         artifact.fields, resolutions, review_threshold=review_threshold
@@ -315,7 +315,7 @@ def apply_field_resolutions(
     *,
     review_threshold: float = 75.0,
 ) -> list[ExtractedField]:
-    """Apply Sol values and re-run validation without assembling an artifact."""
+    """Apply repair values and re-run validation without assembling an artifact."""
 
     fields = []
     for field in source_fields:
@@ -330,7 +330,7 @@ def apply_field_resolutions(
                     update={
                         "reasons": [
                             *field.reasons,
-                            "sol_confirmation_cannot_resolve_conflict",
+                            "repair_confirmation_cannot_resolve_conflict",
                         ]
                     }
                 )
@@ -342,7 +342,7 @@ def apply_field_resolutions(
                     update={
                         "status": "needs_review",
                         "confidence": min(field.confidence, 49.0),
-                        "reasons": [*field.reasons, "sol_proposed_new_value_ignored"],
+                        "reasons": [*field.reasons, "repair_proposed_new_value_ignored"],
                     }
                 )
             )
@@ -351,7 +351,7 @@ def apply_field_resolutions(
         if any(not check.passed for check in checks):
             fields.append(
                 field.model_copy(
-                    update={"reasons": [*field.reasons, "sol_repair_failed_validation"]}
+                    update={"reasons": [*field.reasons, "repair_repair_failed_validation"]}
                 )
             )
             continue
@@ -360,7 +360,7 @@ def apply_field_resolutions(
             page=source.page,
             region_id=source.region_id,
             box=source.box,
-            route="sol",
+            route="repair",
             candidate=value,
             confidence=min(model_confidence, 90.0),
         )
@@ -373,7 +373,7 @@ def apply_field_resolutions(
                     "status": (
                         "accepted" if resolved_confidence >= review_threshold else "needs_review"
                     ),
-                    "reasons": [*field.reasons, "sol_repaired"],
+                    "reasons": [*field.reasons, "field_repaired"],
                     "evidence": [*field.evidence, evidence],
                     "validation_checks": checks,
                 }
@@ -487,16 +487,21 @@ def _segment_evidence(
     record: Any | None,
     index: int,
     semantic_id: str | None = None,
-) -> tuple[Literal["local_text", "local_table", "luna", "terra", "sol"], float, tuple[str, ...]]:
+) -> tuple[
+    Literal["local_text", "local_table", "primary", "verification", "repair"],
+    float,
+    tuple[str, ...],
+]:
     if record is None or index >= len(record.segments):
-        return "terra", 0.0, ("missing_evidence",)
+        return "verification", 0.0, ("missing_evidence",)
     segment = record.segments[index]
     unresolved = getattr(segment, "unresolved_fields", ())
     status = getattr(segment, "status", "needs_review")
     verified = status in {"accepted_consensus", "accepted_resolution"}
     if unresolved and semantic_id is not None and semantic_id not in unresolved:
         verified = not getattr(segment, "structural_conflicts", ())
-    reasons = (*segment.reasons, "verification_attempted")
+    attempted = any(attempt.stage != "primary" for attempt in getattr(segment, "attempts", ()))
+    reasons = (*segment.reasons, *(("verification_attempted",) if attempted else ()))
     if verified:
         reasons = ("visual_confirmation_agreed", "verification_attempted")
     elif status == "accepted_quality" and "calibrated_acceptance" in reasons:

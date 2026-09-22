@@ -31,12 +31,12 @@ def test_config_loads_strict_toml(tmp_path: Path) -> None:
 
 def test_config_deep_merges_model_override(tmp_path: Path) -> None:
     path = tmp_path / "settings.toml"
-    path.write_text('[models.luna]\nname = "custom-luna"\n', encoding="utf-8")
+    path.write_text('[model]\ninput_rate = "3.00"\n', encoding="utf-8")
 
     config = PipelineConfig.from_toml(path)
 
-    assert config.models.luna.name == "custom-luna"
-    assert str(config.models.luna.input_rate) == "0.20"
+    assert config.model.name == "gpt-6-sol"
+    assert str(config.model.input_rate) == "3.00"
 
 
 def test_retry_policy_bounds_retry_after() -> None:

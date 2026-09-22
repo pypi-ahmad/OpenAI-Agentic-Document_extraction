@@ -3,8 +3,8 @@
 Date: 2026-09-01. Scope: the current repository snapshot, including production Python,
 Streamlit entry point, launchers, configuration, and tests.
 
-This workspace contains neither Git metadata nor a `.planning` directory. The review is therefore
-a whole-snapshot inspection, not a fabricated commit diff or GSD phase review.
+This workspace contains neither Git metadata nor a `.planning` directory. The review covers the
+whole snapshot and does not infer a commit diff or GSD phase review.
 
 ## Verified safeguards
 
@@ -37,8 +37,8 @@ a whole-snapshot inspection, not a fabricated commit diff or GSD phase review.
 
 ## Open operational risks
 
-- The active calibration profile reports zero safe primary acceptances, so routing is effectively
-  repair-all until a better credentialed calibration is accepted.
+- The active calibration profile reports zero safe primary acceptances. Until a better
+  credentialed calibration passes, routing remains repair-all.
 - Human-review status is signaled but reviewer identity, disposition, and durable approval history
   require an external governed workflow.
 - In-memory uploads and generated artifacts can contain sensitive healthcare data; deployment

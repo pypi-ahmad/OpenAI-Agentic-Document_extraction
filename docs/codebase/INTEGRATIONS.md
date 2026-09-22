@@ -1,9 +1,9 @@
 # Integrations
 
-The only AI integration is the official OpenAI Responses API. The active models are
-`gpt-5.6-terra` medium and `gpt-5.6-sol` low. Requests use structured outputs,
-official HTTPS OpenAI endpoints, bounded retries, and `store=False`. Streamlit provides
-the local UI; no database, identity provider, queue, or alternate model provider is present.
+ADE uses the official OpenAI Responses API as its only remote AI integration. Every request uses
+`gpt-6-sol` with medium reasoning for extraction and optional verification or repair. Requests use
+structured output, official HTTPS OpenAI endpoints, bounded retries, and `store=False`. Streamlit
+provides the local UI. The app has no database, identity provider, queue, or alternate model provider.
 
 ## Evidence
 

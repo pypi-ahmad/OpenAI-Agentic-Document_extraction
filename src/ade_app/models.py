@@ -450,7 +450,7 @@ class FieldEvidence(StrictModel):
     page: int = Field(ge=1)
     region_id: str
     box: Box
-    route: Literal["local_text", "local_table", "luna", "terra", "sol"]
+    route: Literal["local_text", "local_table", "primary", "verification", "repair"]
     candidate: str | bool
     confidence: float = Field(ge=0, le=100)
     semantic_id: str | None = None

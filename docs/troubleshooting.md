@@ -6,8 +6,10 @@ Install `uv`, open a new PowerShell session, then run:
 
 ```powershell
 uv --version
-uv sync --frozen
+uv sync --frozen --extra gpu
 ```
+
+Use `--extra cpu` instead when the declared CUDA runtime is unavailable; select one runtime extra.
 
 ## `Required credential OPENAI_API_KEY is unavailable`
 
@@ -35,7 +37,7 @@ file, 500 MB per batch, 20 files, and 100 selected pages. Corrupt/encrypted PDFs
 
 ## Extraction is slow
 
-Large pages require image processing. Low-quality segments may trigger Sol repair. Reduce pages
+Large pages require image processing. Enabled verification or repair stages add GPT-6 Sol calls. Reduce pages
 or batch size, then inspect **Usage** for repairs. Do not exceed account concurrency limits merely
 to hide latency.
 
@@ -44,6 +46,13 @@ to hide latency.
 Inspect failure reasons, segment scores, unresolved fields, and model attempts in **Usage**.
 Compare output with the source/annotated PDF. Successful pages remain downloadable. Repeated
 retries are not evidence of correctness.
+
+## Draft is readable but verified output is redacted
+
+This is expected when independent evidence or compatible calibration is missing. Drafts preserve
+primary transcription without claiming correctness. Both optional stages default off. Enable
+**Verify extraction** or **Repair flagged fields** for a new run if additional paid reads are
+appropriate; they do not guarantee acceptance. Review unresolved values against the source.
 
 ## Annotated PDF is missing a box
 
@@ -73,4 +82,3 @@ uv run --frozen ty check
 ```
 
 Do not weaken strict validation to accommodate an invalid response.
-

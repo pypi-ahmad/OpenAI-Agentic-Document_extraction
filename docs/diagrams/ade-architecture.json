@@ -53,7 +53,7 @@
       "id": "renderer",
       "type": "backend",
       "label": "Contract renderer",
-      "sublabel": "Strict JSON + Markdown",
+      "sublabel": "Draft + verified output",
       "pos": [980, 250],
       "size": [160, 68]
     },
@@ -66,29 +66,29 @@
       "size": [160, 68]
     },
     {
-      "id": "terra_primary",
+      "id": "primary_extraction",
       "type": "cloud",
-      "label": "GPT-5.6 Terra",
+      "label": "GPT-6 Sol",
       "sublabel": "Primary semantic read",
       "tag": "medium effort",
       "pos": [600, 450],
       "size": [150, 72]
     },
     {
-      "id": "terra_consensus",
+      "id": "segment_verification",
       "type": "cloud",
-      "label": "GPT-5.6 Terra",
-      "sublabel": "Independent crop read",
-      "tag": "sub-threshold only",
+      "label": "GPT-6 Sol",
+      "sublabel": "Optional verification",
+      "tag": "off by default",
       "pos": [790, 450],
       "size": [150, 72]
     },
     {
-      "id": "sol_resolution",
+      "id": "field_resolution",
       "type": "cloud",
-      "label": "GPT-5.6 Sol",
-      "sublabel": "Disputed fields only",
-      "tag": "low effort",
+      "label": "GPT-6 Sol",
+      "sublabel": "Optional field repair",
+      "tag": "medium effort",
       "pos": [980, 450],
       "size": [160, 72]
     },
@@ -113,7 +113,7 @@
     {
       "kind": "region",
       "label": "OpenAI Responses API · store=false",
-      "wraps": ["terra_primary", "terra_consensus", "sol_resolution"],
+      "wraps": ["primary_extraction", "segment_verification", "field_resolution"],
       "pad": 26
     }
   ],
@@ -121,13 +121,13 @@
     {"id": "operator_uploads", "from": "operator", "to": "streamlit_ui", "label": "authorized files", "variant": "emphasis", "labelDy": -28},
     {"id": "ui_to_imaging", "from": "streamlit_ui", "to": "input_imaging", "label": "selected pages", "labelDy": 58},
     {"id": "imaging_to_batch", "from": "input_imaging", "to": "batch_pipeline", "label": "RenderedPage", "labelDy": -28},
-    {"id": "batch_to_primary", "from": "batch_pipeline", "to": "terra_primary", "label": "page image", "labelDy": 24},
-    {"id": "primary_to_quality", "from": "terra_primary", "to": "quality_router", "label": "semantic page"},
+    {"id": "batch_to_primary", "from": "batch_pipeline", "to": "primary_extraction", "label": "page image", "labelDy": 24},
+    {"id": "primary_to_quality", "from": "primary_extraction", "to": "quality_router", "label": "semantic page"},
     {"id": "quality_accept", "from": "quality_router", "to": "renderer", "label": "accepted", "labelDy": -21},
-    {"id": "quality_to_consensus", "from": "quality_router", "to": "terra_consensus", "label": "low-quality crop", "variant": "security", "labelDy": 24},
-    {"id": "consensus_agrees", "from": "terra_consensus", "to": "renderer", "label": "agreement", "variant": "dashed"},
-    {"id": "consensus_disputes", "from": "terra_consensus", "to": "sol_resolution", "label": "disputed fields", "variant": "security", "labelDy": 53},
-    {"id": "sol_to_renderer", "from": "sol_resolution", "to": "renderer", "label": "patch or needs_review"},
+    {"id": "quality_to_consensus", "from": "quality_router", "to": "segment_verification", "label": "low-quality crop", "variant": "security", "labelDy": 24},
+    {"id": "consensus_agrees", "from": "segment_verification", "to": "renderer", "label": "agreement", "variant": "dashed"},
+    {"id": "consensus_disputes", "from": "segment_verification", "to": "field_resolution", "label": "disputed fields", "variant": "security", "labelDy": 53},
+    {"id": "sol_to_renderer", "from": "field_resolution", "to": "renderer", "label": "patch or needs_review"},
     {"id": "renderer_to_artifacts", "from": "renderer", "to": "artifacts", "label": "validated artifact", "variant": "emphasis", "labelDy": -28},
     {"id": "artifacts_to_evaluation", "from": "artifacts", "to": "evaluation", "label": "generated output", "variant": "dashed", "fromSide": "bottom", "toSide": "top", "labelDy": 58},
     {"id": "gt_to_evaluation", "from": "groundtruth", "to": "evaluation", "label": "reference pairs"}
@@ -141,12 +141,12 @@
     {
       "dot": "amber",
       "title": "Quality-gated routing",
-      "items": ["Independent Terra rereads uncertain segments", "Sol receives only field-level disagreements", "Unresolved evidence becomes needs_review"]
+      "items": ["Optional verification rereads uncertain segments", "Optional repair rereads flagged fields", "Unresolved evidence becomes needs_review"]
     },
     {
       "dot": "emerald",
       "title": "Measured outputs",
-      "items": ["Strict JSON and deterministic Markdown", "Annotated PDF and manifests preserve review evidence", "Accuracy claims require mapped GroundTruth evaluation"]
+      "items": ["Unverified drafts and fail-closed v3 output", "Annotated PDF and manifests preserve review evidence", "Accuracy claims require mapped GroundTruth evaluation"]
     }
   ]
 }

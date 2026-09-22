@@ -53,8 +53,8 @@ class ConcurrentExtractor:
             request_id=f"request-{page.source_page}",
             service_tier="standard",
             range_repairs=0,
-            usage_by_model=(("gpt-5.6-terra", usage),),
-            models_used=("gpt-5.6-terra",),
+            usage_by_model=(("gpt-6-sol", usage),),
+            models_used=("gpt-6-sol",),
         )
 
 
@@ -188,11 +188,15 @@ def test_document_failure_is_isolated_and_batch_zip_is_exact(sample_page) -> Non
         assert set(archive.namelist()) == {
             "01_same/same.parse.md",
             "01_same/same.parse.json",
+            "01_same/same.draft.md",
+            "01_same/same.draft.json",
             "01_same/same.confidence.json",
             "01_same/same.annotated.pdf",
             "01_same/manifest.json",
             "03_same/same.parse.md",
             "03_same/same.parse.json",
+            "03_same/same.draft.md",
+            "03_same/same.draft.json",
             "03_same/same.confidence.json",
             "03_same/same.annotated.pdf",
             "03_same/manifest.json",

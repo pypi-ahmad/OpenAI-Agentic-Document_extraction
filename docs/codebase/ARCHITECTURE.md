@@ -1,8 +1,7 @@
 # Architecture
 
-The application is a local Streamlit front end around a staged, in-memory extraction
-pipeline. Model responses remain semantic data; local code owns validation, rendering,
-provenance, annotation, and packaging.
+ADE is a local Streamlit front end around an in-memory extraction pipeline. Model responses are
+semantic data. Local code handles validation, rendering, provenance, annotation, and packaging.
 
 ## Components
 
@@ -21,24 +20,24 @@ provenance, annotation, and packaging.
 ## Data flow
 
 ```text
-upload → validate/rasterize → Terra structured page
-  → quality gate → independent Terra segment crop
+upload → validate/rasterize → GPT-6 Sol structured page
+  → unverified draft MD/JSON (primary snapshot)
+  → quality gate → optional independent GPT-6 Sol segment crop
     → agreement: preserve primary
-    → disagreement: Sol disputed-field crop
+    → disagreement or flagged field: optional GPT-6 Sol repair crop
       → resolved patch or needs_review
   → deterministic JSON/Markdown → annotated review PDF → ZIP/manifest
 ```
 
 Document content stays in memory unless the operator downloads artifacts or runs the
 evaluation CLI. Manifests contain hashes, identifiers, usage, cost, and review state.
+Both optional stages default off. All requests use medium reasoning and the same model.
 
 ## Concurrency
 
-The UI accepts at most 20 uploads, but this is not a 20-call API pool. The executable
-batch path permits at most four concurrent documents and up to two primary page workers
-per document. A process-wide bounded semaphore in `openai_client.py` admits at most four
-Responses API calls, so the current Streamlit path still has at most four OpenAI calls in
-flight globally. Requested page order is restored after futures complete.
+The UI accepts at most 20 uploads. The batch path permits at most four concurrent documents and
+two primary page workers per document. A process-wide semaphore in `openai_client.py` admits at
+most four Responses API calls. Requested page order is restored after futures complete.
 
 ## Evidence
 

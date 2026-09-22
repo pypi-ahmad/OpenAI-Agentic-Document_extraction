@@ -1,10 +1,8 @@
 # Technical details
 
-This document outlines the software stack, core design invariants, error handling strategies, and persistence mechanisms implemented in the codebase.
+This reference covers the software stack, invariants, error handling, and persistence.
 
 ## Software stack
-
-The components of the stack and their specific roles:
 
 ### Core runtime
 
@@ -36,7 +34,7 @@ The components of the stack and their specific roles:
 
 ## System invariants
 
-The codebase enforces the following architectural invariants:
+The code enforces these invariants.
 
 ### Reversible coordinate spaces
 
@@ -50,7 +48,7 @@ Whenever preprocessing modifies the raw page (e.g., rotation, deskewing, margin 
 
 - **Version 3 schema (`ExtractionDocumentV3`)**: Non-observed values (`blank`, `illegible`, `ambiguous`, `conflicting`, `unverified`) must be represented as `null`. Only `observed` values can be populated strings or booleans.
 - **Evidence grounding**: Accepted fields require verified evidence confirming model agreement or calibrated confidence. Any field failing validation checks cannot be accepted.
-- **Manifest v9**: Output bundles must contain a cryptographic manifest detailing SHA-256 digests of all produced files, exact token usage, estimated cost, and review requirements.
+- **Manifest v10**: Output bundles record the single model, medium reasoning, stage flags, SHA-256 digests including drafts, token usage, estimated cost, and review requirements. Readers retain v8/v9 support.
 
 ### Concurrency and resource bounds
 
@@ -64,7 +62,7 @@ The underlying Paddle layout analysis engine is not thread-safe for concurrent i
 
 ## Error handling
 
-The system employs fail-closed error handling and fault isolation:
+The system fails closed and isolates page failures.
 
 - **Page-level fault isolation**: If an individual page fails during ingestion, layout, or extraction, the failure is recorded in `PageRunRecord.failure_reason`. The pipeline continues processing remaining pages and documents.
 - **Fail-closed review status**: If any page encounters a failure or any field remains unresolved, the run status is marked `needs_review` and the manifest review state is set to `required_unresolved` or `failed`.

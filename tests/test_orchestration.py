@@ -6,9 +6,9 @@ from ade_app.inputs import DocumentInput
 from ade_app.orchestration import (
     DocumentWorkflowState,
     ExtractionStageResult,
+    FieldRetryPlan,
     IngestionStageResult,
     LayoutStageResult,
-    SolRetryPlan,
     ValidationStageResult,
     WorkflowConfig,
     WorkflowRequest,
@@ -39,7 +39,7 @@ class RecordingOperations:
             usage=TokenUsage(),
             cost_usd=Decimal(0),
             service_tier="standard",
-            model_version="gpt-5.6-luna",
+            model_version="gpt-6-sol",
             peer_evidence_count=0,
             duration_ms=0,
         )
@@ -59,7 +59,7 @@ class RecordingOperations:
 
     def validate_and_link(self, extraction):
         self.stages.append("validate_and_link")
-        retry = SolRetryPlan(mandatory_region_ids=("region-1",))
+        retry = FieldRetryPlan(mandatory_region_ids=("region-1",))
         return ValidationStageResult((), {}, 0, 0, retry if self.route_calls == 1 else None)
 
     def generate_outputs(self, ingestion, extraction, validation):

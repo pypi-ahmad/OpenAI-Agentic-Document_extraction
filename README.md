@@ -1,16 +1,18 @@
 # OpenAI Agentic Document Extraction
 
-ADE (Agentic Document Extraction) is a local Streamlit application and command-line pipeline that extracts scanned PDFs and images into deterministic Markdown, GroundTruth-compatible v3 JSON, confidence reports, and annotated review PDFs. The pipeline uses PyMuPDF for page rasterization, conditional OpenCV image preprocessing, PP-StructureV3 for local layout analysis, and an in-memory LangGraph state machine orchestrating an OpenAI model cascade (`gpt-5.6-luna` for primary extraction, `gpt-5.6-terra` for segment verification, and `gpt-5.6-sol` for disputed field resolution) with fail-closed confidence thresholds.
+ADE (Agentic Document Extraction) is a local Streamlit application and command-line pipeline for scanned PDFs and images. Every OpenAI request uses `gpt-6-sol` with medium reasoning. Extraction always runs; the default `baseline` mode reads full pages. Verification and repair are independent optional stages, both off by default. PyMuPDF, OpenCV, PP-StructureV3, and an in-memory LangGraph workflow handle imaging, layout, validation, and output assembly.
+
+Each run exports an unverified draft, fail-closed GroundTruth-compatible v3 JSON and Markdown, confidence reports, and annotated review PDFs. No GPT-6 Sol calibration profile ships with the app. Historical profiles cannot authorize automatic acceptance for this model. Review draft content against the source before use.
 
 ## Requirements
 
-Requirements derived from `pyproject.toml`, `.python-version`, and runtime scripts:
+The project uses the following runtime requirements.
 
 - **Operating system**: Windows 11 is required for the `launch.cmd` launcher script (uses PowerShell CIM and network connection commands) and the precompiled CUDA 12.9 GPU wheel. Python CLI utilities can run on other platforms using the CPU extra.
 - **Python**: Python `>=3.13.15,<3.14` (`.python-version` specifies `3.13.15`).
 - **Package manager**: [`uv`](https://docs.astral.sh/uv/) (project build backend requires `uv_build>=0.12.7,<0.13.0`).
 - **Accelerator (optional)**: NVIDIA GPU with CUDA 12.9 support for `paddlepaddle-gpu`. A CPU-only fallback is available via the `cpu` extra.
-- **Credentials**: OpenAI API key with access to `gpt-5.6-luna`, `gpt-5.6-terra`, and `gpt-5.6-sol`.
+- **Credentials**: OpenAI API key with access to `gpt-6-sol`.
 
 ## Setup and run commands
 
@@ -21,7 +23,7 @@ git clone https://github.com/pypi-ahmad/OpenAI-Agentic-Document_extraction.git
 cd OpenAI-Agentic-Document_extraction
 ```
 
-### 2. Set credentials
+### 2. Configure credentials
 
 Set the OpenAI API key in your terminal session:
 
@@ -105,7 +107,7 @@ uv run --no-sync ade-profile --check
 
 - `.streamlit/config.toml`: Configures the Streamlit server port (`9674`), loopback address (`127.0.0.1`), security settings (XSRF protection enabled), maximum upload size (`200 MB`), and UI dark theme.
 - `.streamlit/secrets.toml`: Optional, Git-ignored file to supply `OPENAI_API_KEY`.
-- TOML pipeline configuration (passed to CLI commands via `--config <path>`): Supports overriding defaults for `[models]`, `[imaging]`, `[layout]`, `[routing]`, `[retries]`, `[runtime]`, and `[logging]`.
+- TOML pipeline configuration (passed to CLI commands via `--config <path>`): Supports overriding defaults for `[model], [stages]`, `[imaging]`, `[layout]`, `[routing]`, `[retries]`, `[runtime]`, and `[logging]`.
 
 ## Repository map
 
@@ -129,7 +131,7 @@ data/                  Local input documents and GroundTruth pairs (Git-ignored)
 evaluation/            Generated evaluation reports and traces (Git-ignored)
 ```
 
-## How to run tests
+## Run tests
 
 Execute the test suite using pytest via `uv`:
 
@@ -149,7 +151,7 @@ Run static type checking:
 uv run --no-sync ty check
 ```
 
-## Known limitations
+## Limits
 
 - **In-memory state and crash recovery**: Extraction state and intermediate page images exist in memory only. LangGraph is compiled without a persistent checkpointer; crashed runs cannot resume mid-workflow and must be restarted.
 - **Strict batch constraints**: Multi-document processing in the web UI enforces bounds of at most 20 files, 500 MB total size, 100 pages, 4 concurrent documents, 2 page workers per document, and 4 concurrent OpenAI API calls.

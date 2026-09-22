@@ -15,7 +15,7 @@
 - Per-request long-context cost accounting; aggregate small requests do not incur that premium.
 - Evaluation configuration, route comparisons with a shared budget, resume checks, and offline calibration.
 - Family-grouped calibration; promotion requires verified references, exact values and no observed
-  false accepts. Local routes additionally require paired recall preservation.
+  false accepts. Local routes also require paired recall preservation.
 - Restored test discovery, PDF pixel-bound handling, annotation-failure reporting and provenance fixes.
 - Declared the missing PaddleX OCR dependencies; recorded actual layout failures and full-page fallbacks.
 

@@ -1,3 +1,4 @@
+from ade_app.config import PipelineConfig, RoutingSettings
 from ade_app.cost import TokenUsage
 from ade_app.hybrid import HybridPageExtractor
 from ade_app.layout import LayoutAnalysis, LayoutRegion, PPStructureAnalyzer
@@ -27,7 +28,11 @@ class Analyzer(PPStructureAnalyzer):
 
 class LlmMustNotRun(OpenAIPageExtractor):
     def __init__(self):
-        super().__init__(object(), profile_path=None)
+        super().__init__(
+            object(),
+            profile_path=None,
+            config=PipelineConfig(routing=RoutingSettings(mode="selective")),
+        )
 
     def extract_primary(self, *args, **kwargs):
         raise AssertionError("calibrated local OCR must not call Terra")

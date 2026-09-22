@@ -2,8 +2,8 @@
 
 Use strict Pydantic models at trust boundaries, immutable slotted dataclasses for runtime
 records, deterministic ordering, bounded concurrency, and `Decimal` for cost. Prompts are
-Markdown files. Never hardcode credentials or GroundTruth document values. Make failures and
-review state explicit rather than correcting uncertain content.
+Markdown files. Never hardcode credentials or GroundTruth document values. Record failures and
+review state. Do not correct uncertain content.
 
 ## Evidence
 

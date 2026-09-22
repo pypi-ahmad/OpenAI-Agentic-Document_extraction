@@ -1,6 +1,6 @@
 # Contributing
 
-This document describes how to set up a development environment and run verification checks on this codebase.
+Set up the development environment and run these checks before submitting changes.
 
 ## Development environment setup
 
@@ -17,7 +17,7 @@ This document describes how to set up a development environment and run verifica
 
 ## Local verification checks
 
-Run the following test, lint, and type checks prior to submitting changes:
+Run these test, lint, and type checks before submitting changes.
 
 ### Test suite
 

@@ -18,7 +18,7 @@ def _region(confidence: float, *, kind: str = "text") -> LayoutRegion:
         confidence=confidence,
         box=box,
         prepared_box=box,
-        route="local_text" if kind == "text" else "terra",
+        route="local_text" if kind == "text" else "verification",
         text="Name: Jane Doe" if kind == "text" else None,
     )
 
@@ -27,8 +27,8 @@ def test_printed_routing_uses_90_percent_boundary() -> None:
     high = LayoutAnalysis(source_page=1, regions=[_region(0.90)], proposals=[])
     low = LayoutAnalysis(source_page=1, regions=[_region(0.899)], proposals=[])
 
-    assert _region_inputs(high)[0].route == "luna"
-    assert _region_inputs(low)[0].route == "terra"
+    assert _region_inputs(high)[0].route == "primary"
+    assert _region_inputs(low)[0].route == "verification"
 
 
 def test_uncertain_audit_caps_confidence_below_sol_threshold() -> None:

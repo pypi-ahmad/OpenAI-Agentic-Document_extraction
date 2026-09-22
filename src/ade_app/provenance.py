@@ -2,7 +2,7 @@
 
 Responsible for computing SHA-256 digests of inputs, prompts, and outputs, tracking
 model versions, recording timing/cost metrics, and building strict JSON schema manifests
-(`MANIFEST_SCHEMA_VERSION = 9`).
+(`MANIFEST_SCHEMA_VERSION = 10`, with v8/v9 readers).
 Must NOT include unredacted raw document text or API credentials in manifest payloads.
 Next: ade_app.pipeline where build_manifest is invoked to generate extraction run provenance.
 """
@@ -19,11 +19,12 @@ from typing import Annotated, Any, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
+from ade_app.config import StageSettings
 from ade_app.constants import DEFAULT_DPI, QUALITY_PROFILE_PATH
 from ade_app.inputs import DocumentInput
 from ade_app.raster import RenderedPage
 
-MANIFEST_SCHEMA_VERSION = 9
+MANIFEST_SCHEMA_VERSION = 10
 Sha256 = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")]
 ReviewState = Literal["not_required", "required_unresolved", "failed"]
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -41,7 +42,7 @@ class StrictManifestModel(BaseModel):
 
 
 class GovernanceManifestFields(StrictManifestModel):
-    manifest_schema_version: Literal[8, 9]
+    manifest_schema_version: Literal[8, 9, 10]
     governance_policy_version: str
     intended_use: str
     data_classification: str
@@ -150,7 +151,9 @@ class SegmentManifest(StrictManifestModel):
     reasons: list[str]
     structural_conflicts: list[str]
     unresolved_fields: list[str]
-    final_route: Literal["local_text", "local_table", "luna", "terra", "sol"]
+    final_route: Literal[
+        "local_text", "local_table", "primary", "verification", "repair", "luna", "terra", "sol"
+    ]
     attempts: list[SegmentAttemptManifest]
 
 
@@ -223,7 +226,9 @@ class PreprocessingManifest(StrictManifestModel):
 
 class RoutingManifest(StrictManifestModel):
     layout_engine: Literal["PP-StructureV3"]
-    form_detection: Literal["OpenCV geometry + Terra semantics"]
+    form_detection: Literal[
+        "OpenCV geometry + Terra semantics", "OpenCV geometry + GPT-6 Sol semantics"
+    ]
     policy: Literal["calibrated_fail_closed"]
     full_page_fallback_count: int = Field(ge=0)
 
@@ -236,7 +241,10 @@ class DocumentManifest(DocumentProvenanceFields):
     endpoint: Literal["/v1/responses"]
     provider_response_storage: Literal[False]
     model: str
-    model_cascade: list[ModelRouteManifest]
+    model_cascade: list[ModelRouteManifest] = Field(default_factory=list)
+    reasoning_effort: Literal["medium"] | None = None
+    stages: StageSettings | None = None
+    draft_sha256: dict[str, Sha256] | None = None
     peer_evidence_count: int = Field(ge=0)
     prompt_sha256: dict[str, Sha256]
     completed_page_count: int = Field(ge=0)
@@ -259,6 +267,15 @@ class DocumentManifest(DocumentProvenanceFields):
 
     @model_validator(mode="after")
     def validate_document(self) -> Self:
+        if self.manifest_schema_version == 10:
+            if (
+                self.model != "gpt-6-sol"
+                or self.reasoning_effort != "medium"
+                or self.stages is None
+            ):
+                raise ValueError("v10 requires GPT-6 Sol, medium reasoning, and stage settings")
+            if self.draft_sha256 is None or set(self.draft_sha256) != {"markdown", "json"}:
+                raise ValueError("v10 requires draft artifact hashes")
         _validate_increasing_pages(self.selected_pages)
         page_numbers = [page.source_page for page in self.pages]
         if page_numbers != self.selected_pages:
@@ -347,7 +364,10 @@ class BatchManifest(GovernanceManifestFields):
     model_provider: Literal["OpenAI"]
     endpoint: Literal["/v1/responses"]
     provider_response_storage: Literal[False]
-    model_cascade: list[ModelRouteManifest]
+    model_cascade: list[ModelRouteManifest] = Field(default_factory=list)
+    model: str | None = None
+    reasoning_effort: Literal["medium"] | None = None
+    stages: StageSettings | None = None
     usage: TokenUsageManifest
     estimated_cost_usd: str
     api_call_count: int = Field(ge=0)
@@ -357,6 +377,10 @@ class BatchManifest(GovernanceManifestFields):
 
     @model_validator(mode="after")
     def validate_batch(self) -> Self:
+        if self.manifest_schema_version == 10 and (
+            self.model != "gpt-6-sol" or self.reasoning_effort != "medium" or self.stages is None
+        ):
+            raise ValueError("v10 requires GPT-6 Sol, medium reasoning, and stage settings")
         if self.file_count != len(self.files):
             raise ValueError("file_count does not match files")
         status_counts = {
@@ -529,10 +553,16 @@ def artifact_hashes(markdown: str, json_text: str, annotated_pdf: bytes) -> dict
 def validate_document_manifest(value: dict[str, Any]) -> dict[str, Any]:
     """Validate and serialize the complete document manifest contract."""
 
-    return DocumentManifest.model_validate(value).model_dump(mode="json")
+    result = DocumentManifest.model_validate(value).model_dump(mode="json", exclude_unset=True)
+    if result["manifest_schema_version"] == 10:
+        result.pop("model_cascade", None)
+    return result
 
 
 def validate_batch_manifest(value: dict[str, Any]) -> dict[str, Any]:
     """Validate and serialize the complete batch manifest contract."""
 
-    return BatchManifest.model_validate(value).model_dump(mode="json")
+    result = BatchManifest.model_validate(value).model_dump(mode="json", exclude_unset=True)
+    if result["manifest_schema_version"] == 10:
+        result.pop("model_cascade", None)
+    return result

@@ -1,10 +1,14 @@
 # Architecture
 
-This document describes the request and data flow, primary state types, and external system boundaries of the ADE (Agentic Document Extraction) codebase.
+This reference covers ADE request/data flow, primary state types, and external system boundaries.
 
 ## System flow
 
-The extraction pipeline processes documents through a multi-stage workflow defined by an in-memory LangGraph state machine in `ade_app.orchestration.graph` and executed across components in `ade_app`.
+The extraction pipeline uses an in-memory LangGraph workflow. Every request uses `gpt-6-sol`
+with medium reasoning. Extraction always runs, and default `baseline` routing uses full pages.
+Explicit `local_first` and `selective` configurations retain regional routing. Verification and
+repair default off, can be enabled independently, and use the same model. Primary drafts are
+exported separately from the fail-closed v3 artifact.
 
 ```mermaid
 flowchart TD
@@ -12,13 +16,15 @@ flowchart TD
     B --> C["Layout Analysis<br/>(ade_app.services.layout / ade_app.layout)"]
     C --> D["Route & Extract<br/>(ade_app.hybrid / ade_app.orchestration.nodes)"]
     D --> E{"Quality Gate & Agreement<br/>(ade_app.quality / ade_app.consensus)"}
-    E -- "High confidence" --> F["Validate & Link<br/>(ade_app.fields / ade_app.services.validation)"]
-    E -- "Disputed / Low confidence" --> G["Sol Field Resolution<br/>(ade_app.openai_client)"]
+    D --> K["Unverified primary draft"]
+    E -- "Evidence or unresolved status" --> F["Validate & Link<br/>(ade_app.fields / ade_app.services.validation)"]
+    E -- "Repair enabled / flagged" --> G["GPT-6 Sol Field Resolution<br/>(ade_app.openai_client)"]
     G --> F
     F --> H{"Validation Status"}
-    H -- "Unresolved material fields" --> D
+    H -- "Repair enabled / bounded retry" --> G
     H -- "Resolved or Flagged" --> I["Generate Outputs<br/>(ade_app.rendering / ade_app.outputs / ade_app.provenance)"]
-    I --> J["Output Bundle<br/>(Markdown, JSON v3, Confidence, Annotated PDF, Manifest, ZIP)"]
+    K --> J["Output Bundle<br/>(Drafts, Markdown, JSON v3, Confidence, Annotated PDF, Manifest, ZIP)"]
+    I --> J
 ```
 
 ### Execution stages
@@ -28,19 +34,19 @@ flowchart TD
 2. **Layout analysis** (`ade_app.layout.PPStructureAnalyzer`):
    Runs PP-StructureV3 on the prepared page to identify text, table, and form regions, producing `LayoutAnalysis` with bounding boxes. In case of accelerator failure, it falls back to CPU if permitted by configuration.
 3. **Route and extract** (`ade_app.hybrid.HybridPageExtractor`, `ade_app.openai_client`):
-   Dispatches page images concurrently using `ade_app.orchestration.run_page_workflow`. Sends primary extraction requests to OpenAI `gpt-5.6-luna` using structured output (`src/ade_app/prompts/page_extraction.md`).
+   Dispatches page images concurrently using `ade_app.orchestration.run_page_workflow`. Sends primary extraction requests to OpenAI `gpt-6-sol` using structured output (`src/ade_app/prompts/page_extraction.md`).
 4. **Quality verification and consensus** (`ade_app.quality`, `ade_app.consensus`):
-   Segments below the quality threshold or layout confidence threshold are cropped and routed to `gpt-5.6-terra` (`src/ade_app/prompts/segment_consensus.md`) for independent verification.
-5. **Dispute resolution and repair** (`ade_app.openai_client.resolve_field`):
-   Disagreements between primary and verification extractions are routed to `gpt-5.6-sol` (`src/ade_app/prompts/field_resolution.md`) for targeted field repair.
+   When verification is enabled, unresolved segments are cropped and sent to `gpt-6-sol` (`src/ade_app/prompts/segment_consensus.md`) for an independent read.
+5. **Dispute resolution and repair** (`ade_app.openai_client.OpenAIPageExtractor`):
+   When repair is enabled, disagreements or flagged fields are reread by `gpt-6-sol` for targeted repair.
 6. **Validate and link** (`ade_app.fields.link_and_validate_fields`):
-   Constructs `ExtractedFieldV3` records, links evidence, evaluates validation checks, and calculates confidence. If material fields require Sol escalation and retries remain, the graph loops back via `sol_retry`.
+   Links extracted fields and evidence and evaluates validation checks before v3 assembly. If repair is enabled, flagged fields require escalation, and retries remain, the graph loops back via `field_retry`.
 7. **Generate outputs** (`ade_app.rendering`, `ade_app.outputs`, `ade_app.provenance`):
-   Renders deterministic Markdown with `<!-- PAGE BREAK -->` dividers, serializes schema-validated v3 JSON, generates a confidence report, creates an annotated PDF with color-coded bounding boxes and review sidebar, calculates SHA-256 digests, and packages artifacts into a ZIP archive with a v9 manifest.
+   Renders deterministic Markdown with `<!-- PAGE BREAK -->` dividers, serializes schema-validated v3 JSON, generates a confidence report, creates an annotated PDF with color-coded bounding boxes and review sidebar, calculates SHA-256 digests, and packages artifacts into a ZIP archive with a v10 manifest.
 
 ## Main types and state
 
-The primary data structures and where they live in the codebase:
+These are the main data structures.
 
 | Type | Module | Purpose |
 | --- | --- | --- |
@@ -67,10 +73,7 @@ The codebase interacts with the following external systems:
 
 1. **OpenAI API**:
    - Host: `https://api.openai.com/v1` (or an official OpenAI HTTPS endpoint specified by `OPENAI_BASE_URL`).
-   - Models:
-     - `gpt-5.6-luna`: Primary extraction at `low` reasoning effort.
-     - `gpt-5.6-terra`: Independent segment verification at `medium` reasoning effort.
-     - `gpt-5.6-sol`: Targeted dispute resolution and field repair at `low` reasoning effort.
+   - Only model: `gpt-6-sol`, `medium` reasoning for extraction and optional verification/repair.
    - Mechanism: Official `openai.OpenAI` SDK (`responses` interface) with `store=False`.
 2. **Paddle / PP-StructureV3**:
    - Engine: Local PP-StructureV3 layout analysis model loaded via `paddleocr` and `paddlex`.

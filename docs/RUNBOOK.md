@@ -1,6 +1,6 @@
 # Operations runbook
 
-This runbook covers operational procedures for starting, stopping, diagnosing, and logging the ADE application and its command-line utilities.
+Use this runbook to start, stop, diagnose, and log ADE and its command-line tools.
 
 ## Start and stop procedures
 
@@ -43,7 +43,7 @@ To stop a running command, press `Ctrl+C`.
 
 ## Common failures and diagnostics
 
-The following issues can be diagnosed based on application error messages:
+Use these application error messages to diagnose common problems.
 
 ### Credential and environment failures
 

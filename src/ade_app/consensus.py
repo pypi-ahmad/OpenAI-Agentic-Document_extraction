@@ -4,7 +4,7 @@ Responsible for diffing primary and independent verification extractions,
 detecting field disagreements (line and table cell values), and compiling peer
 evidence for consensus gates.
 Must NOT invoke models or execute network calls.
-Next: ade_app.openai_client for Sol dispute resolution, or ade_app.fields for field linking.
+Next: ade_app.openai_client for field dispute resolution, or ade_app.fields for field linking.
 """
 
 from __future__ import annotations

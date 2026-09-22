@@ -59,7 +59,7 @@ def test_long_context_billing_is_per_request_not_aggregate():
     long = _read_usage(
         SimpleNamespace(usage=SimpleNamespace(input_tokens=300_000, output_tokens=100))
     )
-    expected = (Decimal(300_000) * 4 + Decimal(100) * 18) / 1_000_000
+    expected = (Decimal(300_000) * 4 + Decimal(100) * 15) / 1_000_000
     assert calculate_cost(long) == expected
     assert calculate_cost(long + small) == expected + calculate_cost(small)
 

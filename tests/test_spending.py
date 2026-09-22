@@ -19,10 +19,10 @@ def test_schema_failure_retains_known_provider_usage(tmp_path):
     guarded = BudgetedResponses(responses, ledger, PipelineConfig())
     with pytest.raises(ValueError, match="invalid extraction schema"):
         guarded.parse(
-            model="gpt-5.6-luna", input=[], text_format=SemanticCheckbox, max_output_tokens=100
+            model="gpt-6-sol", input=[], text_format=SemanticCheckbox, max_output_tokens=100
         )
     assert ledger.snapshot()["unknown_calls"] == 0
-    assert Decimal(str(ledger.snapshot()["charged_usd"])) == Decimal("0.0000539")
+    assert Decimal(str(ledger.snapshot()["charged_usd"])) == Decimal("0.000495")
     assert ledger.snapshot()["pending_calls"] == 0
     ledger.close()
 
@@ -61,7 +61,7 @@ def test_preflight_failure_never_dispatches_model_request(tmp_path):
     guarded = BudgetedResponses(responses, ledger, PipelineConfig())
     with pytest.raises(SpendingStopped, match="preflight"):
         guarded.parse(
-            model="gpt-5.6-luna", input=[], text_format=SemanticCheckbox, max_output_tokens=100
+            model="gpt-6-sol", input=[], text_format=SemanticCheckbox, max_output_tokens=100
         )
     responses.parse.assert_not_called()
     assert ledger.calls == 0
@@ -73,12 +73,12 @@ def test_zero_configured_rates_cannot_bypass_budget(tmp_path):
     responses = Mock()
     responses.input_tokens.count.return_value = SimpleNamespace(input_tokens=500_000)
     config = PipelineConfig()
-    config.models.sol.input_rate = config.models.sol.output_rate = Decimal(0)
-    config.models.sol.cache_write_rate = Decimal(0)
+    config.model.input_rate = config.model.output_rate = Decimal(0)
+    config.model.cache_write_rate = Decimal(0)
     guarded = BudgetedResponses(responses, ledger, config)
     with pytest.raises(SpendingStopped):
         guarded.parse(
-            model="gpt-5.6-sol", input=[], text_format=SemanticCheckbox, max_output_tokens=100
+            model="gpt-6-sol", input=[], text_format=SemanticCheckbox, max_output_tokens=100
         )
     responses.parse.assert_not_called()
     ledger.close()

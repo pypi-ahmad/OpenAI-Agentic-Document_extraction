@@ -29,6 +29,8 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("input", type=Path)
     parser.add_argument("--output-dir", type=Path)
     parser.add_argument("--config", type=Path)
+    parser.add_argument("--verification", action=argparse.BooleanOptionalAction, default=None)
+    parser.add_argument("--repair", action=argparse.BooleanOptionalAction, default=None)
     parser.add_argument("--pages", default="", help="1-based pages, for example 1,3-5")
     parser.add_argument("--dpi", type=int)
     parser.add_argument("--device", choices=("auto", "gpu", "cpu"))
@@ -41,6 +43,13 @@ def _parser() -> argparse.ArgumentParser:
 
 def _settings(args: argparse.Namespace) -> PipelineConfig:
     config = PipelineConfig.from_toml(args.config) if args.config else PipelineConfig()
+    stages = {
+        name: getattr(args, name)
+        for name in ("verification", "repair")
+        if getattr(args, name) is not None
+    }
+    if stages:
+        config = config.model_copy(update={"stages": config.stages.model_copy(update=stages)})
     if args.dpi is not None:
         config = config.model_copy(
             update={"imaging": config.imaging.model_copy(update={"dpi": args.dpi})}
@@ -97,6 +106,7 @@ def _write_result(result: PipelineResult, directory: Path, *, overwrite: bool) -
         run.annotated_pdf_filename: run.annotated_pdf,
         "manifest.json": json.dumps(run.manifest, indent=2).encode(),
         run.zip_filename: run.zip_bytes,
+        **{name: value.encode() for name, value in run.draft_files.items()},
     }
     for filename, data in outputs.items():
         _atomic_write(directory / filename, data, overwrite=overwrite)

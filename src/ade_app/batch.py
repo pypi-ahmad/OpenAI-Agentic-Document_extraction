@@ -20,7 +20,8 @@ from decimal import Decimal
 from itertools import pairwise
 from typing import Literal
 
-from ade_app.constants import DEFAULT_DPI, MODEL_CASCADE
+from ade_app.config import PipelineConfig
+from ade_app.constants import DEFAULT_DPI
 from ade_app.cost import TokenUsage
 from ade_app.inputs import DocumentInput
 from ade_app.outputs import BatchBundleEntry, build_batch_output_bundle
@@ -143,8 +144,9 @@ def extract_documents(
     dpi: int = DEFAULT_DPI,
     render_pages: PageRenderer | None = None,
     progress: BatchProgressCallback | None = None,
-    retry_failed_fields_with_sol: bool = False,
+    retry_failed_fields: bool | None = None,
     max_graph_retries: int = 1,
+    config: PipelineConfig | None = None,
 ) -> BatchExtractionRun:
     """Run documents and pages concurrently within explicit production bounds."""
 
@@ -241,8 +243,9 @@ def extract_documents(
             progress=lambda _completed, _failed, _total, page, status: events.put(
                 (document.item_id, page, status)
             ),
-            retry_failed_fields_with_sol=retry_failed_fields_with_sol,
+            retry_failed_fields=retry_failed_fields,
             max_graph_retries=max_graph_retries,
+            config=config,
         )
 
     with ThreadPoolExecutor(max_workers=min(max_file_workers, len(documents))) as pool:
@@ -303,6 +306,7 @@ def extract_documents(
                 annotated_pdf_filename=result.run.annotated_pdf_filename,
                 annotated_pdf=result.run.annotated_pdf,
                 manifest=result.run.manifest,
+                extra_files=result.run.draft_files,
             )
         )
     ok_count = sum(result.status == "ok" for result in ordered)
@@ -338,9 +342,13 @@ def extract_documents(
         "model_provider": "OpenAI",
         "endpoint": "/v1/responses",
         "provider_response_storage": False,
-        "model_cascade": [
-            {"model": model, "reasoning_effort": effort} for model, effort in MODEL_CASCADE
-        ],
+        "model": (config or PipelineConfig()).model.name,
+        "reasoning_effort": (config or PipelineConfig()).model.reasoning_effort,
+        "stages": (config or PipelineConfig())
+        .stages.model_copy(
+            update=({} if retry_failed_fields is None else {"repair": retry_failed_fields})
+        )
+        .model_dump(),
         "usage": {
             "input_tokens": usage.input_tokens,
             "cached_input_tokens": usage.cached_input_tokens,

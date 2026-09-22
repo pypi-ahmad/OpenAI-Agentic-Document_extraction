@@ -33,7 +33,7 @@ def test_review_state_is_fail_closed() -> None:
     assert review_state(failed_pages=0, unresolved_segments=0) == "not_required"
     assert review_state(failed_pages=0, unresolved_segments=1) == "required_unresolved"
     assert review_state(failed_pages=1, unresolved_segments=0) == "failed"
-    assert MANIFEST_SCHEMA_VERSION == 9
+    assert MANIFEST_SCHEMA_VERSION == 10
 
 
 def test_private_key_files_are_ignored() -> None:

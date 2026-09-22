@@ -6,9 +6,9 @@
 - `docs/`: tutorials, how-to, reference, explanation, reviews, and governance
 - `data/`, `profiles/`, `evaluation/runs/`: local/generated evidence, Git-ignored
 
-The root `streamlit_app.py` is the interactive entry point. CLI entry points declared in
-`pyproject.toml` cover profiling, calibration, and evaluation. `launch.cmd` delegates to the
-PowerShell launcher and binds the app to port 9674 on loopback.
+The root `streamlit_app.py` is the interactive entry point. CLI entry points in `pyproject.toml`
+cover profiling, calibration, and evaluation. `launch.cmd` calls the PowerShell launcher and
+binds the app to port 9674 on loopback.
 
 ## Evidence
 

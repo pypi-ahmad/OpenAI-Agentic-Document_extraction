@@ -71,14 +71,14 @@ def test_npi_checksum_rejects_invalid_values() -> None:
 def test_checkbox_is_boolean_and_inherits_segment_evidence() -> None:
     record = SimpleNamespace(
         source_page=1,
-        segments=(SimpleNamespace(final_route="luna", final_score=98.0, reasons=()),),
+        segments=(SimpleNamespace(final_route="primary", final_score=98.0, reasons=()),),
     )
 
     artifact = build_v2_artifact(_document("[x] Consent"), (record,))
 
     assert artifact.fields[0].value is True
     assert artifact.fields[0].confidence == 98.0
-    assert artifact.fields[0].evidence[0].route == "luna"
+    assert artifact.fields[0].evidence[0].route == "primary"
 
 
 def test_conflict_keeps_best_candidate_and_all_evidence() -> None:
@@ -108,20 +108,20 @@ def test_html_table_fields_are_discovered() -> None:
     assert artifact.fields[0].value == "ABC-123"
 
 
-def test_sol_cannot_replace_an_extracted_value() -> None:
+def test_repair_cannot_replace_an_extracted_value() -> None:
     field = build_v2_artifact(_document("Name: Original Name")).fields[0]
 
     result = apply_field_resolutions([field], {field.field_id: ("Invented Name", 99.0)})
 
     assert result[0].value == "Original Name"
     assert result[0].status == "needs_review"
-    assert "sol_proposed_new_value_ignored" in result[0].reasons
+    assert "repair_proposed_new_value_ignored" in result[0].reasons
 
 
-def test_sol_cannot_choose_one_side_of_a_cross_page_conflict() -> None:
+def test_repair_cannot_choose_one_side_of_a_cross_page_conflict() -> None:
     field = build_v2_artifact(_document("Member ID: FIRST\nSubscriber ID: SECOND")).fields[0]
 
     result = apply_field_resolutions([field], {field.field_id: ("FIRST", 99.0)})
 
     assert result[0].status == "conflict"
-    assert "sol_confirmation_cannot_resolve_conflict" in result[0].reasons
+    assert "repair_confirmation_cannot_resolve_conflict" in result[0].reasons

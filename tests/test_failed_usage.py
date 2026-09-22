@@ -60,11 +60,17 @@ def test_regional_assembly_failure_preserves_paid_work(monkeypatch, audited_sema
 
 
 def test_budget_stopped_fallback_preserves_prior_regional_usage(monkeypatch):
+    from ade_app.config import PipelineConfig, RoutingSettings
+
     prepared, analysis = _layout_inputs()
     usage = TokenUsage(input_tokens=100, output_tokens=20)
     regional = ValueError("assembly failed")
-    _record_failed_usage(regional, (("gpt-5.6-terra", usage),), 3, 1)
-    llm = OpenAIPageExtractor(object(), profile_path=None)
+    _record_failed_usage(regional, (("gpt-6-sol", usage),), 3, 1)
+    llm = OpenAIPageExtractor(
+        object(),
+        profile_path=None,
+        config=PipelineConfig(routing=RoutingSettings(mode="selective")),
+    )
     monkeypatch.setattr(llm, "extract_regions", Mock(side_effect=regional))
     monkeypatch.setattr(llm, "extract_primary", Mock(side_effect=SpendingStopped("budget")))
     monkeypatch.setattr("ade_app.hybrid.uncovered_foreground", lambda *args: ())

@@ -35,7 +35,7 @@ StageName = Literal[
     "validate_and_link",
     "generate_outputs",
 ]
-NextAction = Literal["continue", "retry", "sol_retry", "validate", "generate", "done", "error"]
+NextAction = Literal["continue", "retry", "field_retry", "validate", "generate", "done", "error"]
 
 
 class WorkflowError(StrictModel):
@@ -49,7 +49,7 @@ class WorkflowError(StrictModel):
 class WorkflowConfig(StrictModel):
     max_graph_retries: int = Field(default=1, ge=0, le=2)
     max_concurrency: int = Field(default=3, ge=1)
-    retry_failed_fields_with_sol: bool = False
+    retry_failed_fields: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -91,11 +91,11 @@ class ExtractionStageResult:
     model_version: str
     peer_evidence_count: int
     duration_ms: int
-    sol_resolutions: dict[str, tuple[str | bool, float]] | None = None
+    field_resolutions: dict[str, tuple[str | bool, float]] | None = None
 
 
 @dataclass(frozen=True, slots=True)
-class SolRetryPlan:
+class FieldRetryPlan:
     mandatory_region_ids: tuple[str, ...] = ()
     fields: tuple[ExtractedField, ...] = ()
 
@@ -110,7 +110,7 @@ class ValidationStageResult:
     untrusted_elements: dict[int, set[str]]
     needs_review_segment_count: int
     needs_review_field_count: int
-    retry_plan: SolRetryPlan | None = None
+    retry_plan: FieldRetryPlan | None = None
 
 
 # The seam between graph mechanics (this package) and actual pipeline behavior:
@@ -126,7 +126,7 @@ class WorkflowOperations(Protocol):
         layout: LayoutStageResult,
         ingestion: IngestionStageResult,
         previous: ExtractionStageResult | None,
-        retry_plan: SolRetryPlan | None,
+        retry_plan: FieldRetryPlan | None,
     ) -> ExtractionStageResult: ...
     def validate_and_link(self, extraction: ExtractionStageResult) -> ValidationStageResult: ...
     def generate_outputs(
@@ -149,12 +149,12 @@ class DocumentWorkflowState(StrictModel):
     layout: LayoutStageResult | None = None
     extraction: ExtractionStageResult | None = None
     validation: ValidationStageResult | None = None
-    retry_plan: SolRetryPlan | None = None
+    retry_plan: FieldRetryPlan | None = None
     output: ExtractionRun | None = None
     next_action: NextAction = "continue"
-    route_mode: Literal["initial", "sol_retry"] = "initial"
+    route_mode: Literal["initial", "field_retry"] = "initial"
     retry_count: int = Field(default=0, ge=0)
-    sol_retry_count: int = Field(default=0, ge=0)
+    field_retry_count: int = Field(default=0, ge=0)
     # Annotated[..., operator.add]: a LangGraph reducer, not an ordinary field default.
     # When more than one node returns an "errors" update in the same step (e.g. concurrent
     # page fan-out), LangGraph concatenates the lists with operator.add instead of the last

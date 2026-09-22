@@ -9,10 +9,10 @@ from ade_app.orchestration.state import (
     DocumentState,
     DocumentWorkflowState,
     ExtractionStageResult,
+    FieldRetryPlan,
     IngestionStageResult,
     LayoutStageResult,
     PageState,
-    SolRetryPlan,
     ValidationStageResult,
     WorkflowRequest,
 )
@@ -21,10 +21,10 @@ __all__ = [
     "DocumentState",
     "DocumentWorkflowState",
     "ExtractionStageResult",
+    "FieldRetryPlan",
     "IngestionStageResult",
     "LayoutStageResult",
     "PageState",
-    "SolRetryPlan",
     "ValidationStageResult",
     "WorkflowRequest",
 ]

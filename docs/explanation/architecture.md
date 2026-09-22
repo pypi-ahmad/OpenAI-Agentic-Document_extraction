@@ -1,8 +1,12 @@
 # Architecture and extraction walkthrough
 
-The application separates probabilistic reading from deterministic validation and
-presentation. OpenAI models return semantic page data; local code validates, routes,
-renders, annotates, accounts for, and packages that data.
+GPT-6 Sol with medium reasoning returns semantic page data. Local code validates, routes,
+renders, annotates, accounts for, and packages it.
+
+Default routing uses full-page extraction. Verification and repair are independent opt-in stages,
+and both start off. Primary results are saved as unverified draft MD/JSON. The verified v3
+renderer redacts unresolved values. Advanced local or regional routing needs explicit
+configuration and compatible calibration evidence.
 
 ```mermaid
 flowchart LR
@@ -12,12 +16,15 @@ flowchart LR
     P --> L[PP-StructureV3 + form geometry]
     L -->|calibrated printed regions| D
     L -->|ambiguous or uncalibrated| G[LangGraph page fan-out]
-    G --> N[Luna structured extraction]
+    G --> N[primary structured extraction]
     N --> Q[Validation and quality evidence]
     Q -->|accepted| D[Deterministic renderer]
-    Q -->|uncalibrated or unresolved| I[Independent Terra crop]
+    Q -->|verification enabled| I[Independent GPT-6 Sol crop]
     I -->|agreement| D
-    I -->|field disagreement| S[Sol field-resolution crop]
+    I -->|repair enabled and disagreement| S[GPT-6 Sol field-resolution crop]
+    Q -->|repair enabled without verification| S
+    Q -->|unverified| H
+    N --> T[Unverified draft MD and JSON]
     I -->|uncertain or conflict| H[needs_review]
     S -->|resolved| D
     S -->|unresolved| H
@@ -100,17 +107,19 @@ RenderedPage → AuditedSemanticPageExtraction(children, audits)
 Failure branch: a page-level provider, runtime, or validation failure becomes a failed
 `PageOutcome` and `PageRunRecord`; it does not discard successful sibling pages.
 
-### 5. Low-quality segments follow the repair branches
+### 5. Low-quality segments may need another read
 
-`OpenAIPageExtractor.finalize` measures every primary segment and records its score, reasons, and
-attempts. Every uncalibrated segment requires independent verification, regardless of its score.
-The configured escalation limit bounds attempted reads; excess segments receive
-`repair_budget_exhausted` and require review:
+`OpenAIPageExtractor.finalize` records each primary segment's score, reasons, and attempts.
+An uncalibrated score alone cannot accept a segment. With verification off, the segment remains
+unverified. With verification on, ADE can read an independent crop. The escalation limit bounds
+these reads. Excess segments receive `repair_budget_exhausted` and need review:
 
-1. An independent Terra request sees the original crop, not the primary transcription.
+1. An independent GPT-6 Sol request sees the original crop, not the primary transcription.
 2. Document-local peer evidence may accompany that crop when a clearer stable repeated region
    exists; `consensus.py` owns peer comparison.
-3. Field-level agreement preserves the candidate; disagreements send disputed crops and structural IDs to Sol, with parent context but no candidate answers.
+3. Field-level agreement preserves the candidate. With repair enabled, disagreements send
+   disputed crops and structural IDs to GPT-6 Sol with parent context but no candidate answers.
+   Repair can also reread flagged fields without segment verification.
 4. Unresolved fields, structural conflicts, failed calls, and exhausted repair budget remain
    `needs_review` rather than receiving fabricated content.
 
@@ -122,7 +131,7 @@ disputed fields → SemanticFieldResolutionBatch
 result → SegmentRecord(status, score, reasons, attempts)
 ```
 
-### 6. Local code creates the canonical artifacts
+### 6. Local code creates artifacts
 
 `render_semantic_page` in `rendering.py` converts semantic lines, styles, checkboxes, figures,
 and table cells into deterministic Markdown and local ranges. `render_document` restores

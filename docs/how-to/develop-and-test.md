@@ -8,11 +8,12 @@ not require an OpenAI credential and do not send documents outside the machine.
 From the repository root in PowerShell:
 
 ```powershell
-uv sync --frozen
+uv sync --frozen --extra gpu
 ```
 
-Use `uv run --frozen` for project commands. Do not install packages directly into the managed
-environment or place credentials in source files.
+Use `--extra cpu` instead when the declared CUDA runtime is unavailable. Select one runtime extra.
+After setup, use `uv run --no-sync --locked` to preserve the installed Paddle runtime. Do not
+place credentials in source files.
 
 ## Choose the narrowest change boundary
 
@@ -31,10 +32,10 @@ explicit partial-failure records.
 Run the smallest relevant test first, then the local quality gates:
 
 ```powershell
-uv run --frozen pytest tests/test_inputs.py
-uv run --frozen pytest
-uv run --frozen ruff check .
-uv run --frozen ty check
+uv run --no-sync --locked pytest tests/test_inputs.py
+uv run --no-sync --locked pytest
+uv run --no-sync --locked ruff check .
+uv run --no-sync --locked ty check
 ```
 
 These commands use mocked model responses. They do not make live OpenAI calls.

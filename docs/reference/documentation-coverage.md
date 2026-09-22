@@ -2,7 +2,7 @@
 
 ## Scope
 
-This documentation pass inspected the Streamlit entry point, packaging metadata, launcher,
+This pass inspected the Streamlit entry point, packaging metadata, launcher,
 configuration, extraction pipeline, strict models, rendering and packaging code, evaluation
 commands, and current tests.
 
@@ -22,14 +22,13 @@ commands, and current tests.
 
 ## Inline code documentation
 
-An AST inventory found 162 non-underscore module-level classes/functions and 48 with inline
-docstrings (30%). That naming-based count includes strict schemas, immutable records, console
-handlers, metric helpers, and internal orchestration functions; it is not the supported public
-API definition. Fifteen of the 16 principal integration classes/functions listed in the Python
-API reference have inline documentation. `GroundTruthDocument` is documented in the reference
-only because a Pydantic model docstring changes its generated JSON Schema description.
+The Python API reference describes the principal integration surfaces, including the shared
+extractor factory, pipeline result, stage configuration, and separate draft contract. It is not
+a promise that every internal class or function is a supported public API. `GroundTruthDocument`
+is documented in the reference rather than through a new model docstring because a Pydantic
+model docstring changes its generated JSON Schema description.
 
-Adding docstrings to internal records was intentionally left out. If the package becomes a
+Internal records do not have added docstrings. If the package becomes a
 supported third-party SDK, define a stable exported namespace first, then require docstrings and
 examples for that namespace.
 
@@ -37,6 +36,7 @@ examples for that namespace.
 
 - All relative Markdown links resolve.
 - Python fenced examples compile.
-- Console `--help` output was checked for all three installed entry points.
+- Console `--help` output was checked for all four installed entry points.
 - Artifact filenames were checked against `pipeline.py`.
-- The project test, Ruff, and ty gates passed after the documentation changes.
+- Documentation, single-model, and calibration tests passed (13 tests) for this sync.
+- No paid extraction, live evaluation, or calibration promotion was performed for this sync.

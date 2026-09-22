@@ -18,8 +18,8 @@ ambiguous inputs are exclusions and do not enter scored metrics.
 ## Discover or verify the contract
 
 ```powershell
-uv run --frozen ade-profile
-uv run --frozen ade-profile --check
+uv run --no-sync --locked ade-profile
+uv run --no-sync --locked ade-profile --check
 ```
 
 The first command generates the profile and JSON Schema from actual pairs. The second verifies
@@ -31,14 +31,14 @@ the existing artifacts without rewriting them. Custom paths are available throug
 The curated suite selects 14 configured pages. The full suite selects every mapped page.
 
 ```powershell
-uv run --frozen ade-evaluate --suite curated --acknowledge-sensitive-output
-uv run --frozen ade-evaluate --suite full --acknowledge-sensitive-output
+uv run --no-sync --locked ade-evaluate --suite curated --acknowledge-sensitive-output
+uv run --no-sync --locked ade-evaluate --suite full --acknowledge-sensitive-output
 ```
 
 Custom example:
 
 ```powershell
-uv run --frozen ade-evaluate `
+uv run --no-sync --locked ade-evaluate `
   --ground-truth-dir "D:\path\to\GroundTruths" `
   --source-dir "D:\path\to\Original Pdfs" `
   --output-root "D:\path\to\evaluation-runs" `
@@ -48,6 +48,12 @@ uv run --frozen ade-evaluate `
 
 Each run receives a timestamped, configuration-hashed directory containing generated artifacts,
 records, a machine-readable report, and a Markdown summary.
+
+Evaluation uses the same single `gpt-6-sol` model and stage settings as production. Without a
+configuration file, verification and repair are both off. To evaluate enabled stages, pass
+`--config settings.toml` containing the desired `[stages]` values. The default shared budget is
+$10 per run; set `--budget-usd` explicitly when needed. `--compare-routes` is retained only to
+return a migration error; run separate configured evaluations instead.
 
 The acknowledgement is mandatory because those files can reproduce sensitive document content.
 Store them only in an approved location and delete them under your retention policy.
@@ -68,13 +74,18 @@ preserves values, case, punctuation, headings, HTML tables, page breaks, and rea
 ## Calibrate the quality gate
 
 ```powershell
-uv run --frozen ade-calibrate-quality --suite full --max-workers 3
+uv run --no-sync --locked ade-calibrate-quality --suite full --max-workers 3
 ```
 
-The quality profile is written only when extraction has no failures, held-out validation accepts
-at least one segment, and the validation false-accept rate is at most 0.10. Otherwise inspect
-`evaluation/calibration-report.json`; do not weaken the promotion rules merely to make calibration
-pass.
+The active profile is written only when extraction has no failures, held-out validation accepts
+at least one segment with zero observed false accepts, and the promotion gate passes across at
+least three document families. Human-verified evidence is required; generated references alone
+cannot authorize promotion. Inspect `evaluation/calibration-report.json` when promotion fails.
+Do not weaken the gate merely to make calibration pass.
+
+No compatible GPT-6 Sol profile ships with the migration. `--from-run evaluation/runs/RUN`
+performs offline calibration from captured primaries and writes a separate candidate, without
+API calls or promotion of the active profile. Historical metrics do not establish GPT-6 Sol accuracy.
 
 Measured results apply only to that corpus and configuration. They do not prove universal
 accuracy or equivalence to another extraction system.

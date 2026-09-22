@@ -31,6 +31,7 @@ def _document_manifest() -> dict[str, object]:
     usage = _usage()
     return {
         **governance_policy_fields(),
+        "manifest_schema_version": 9,
         "generated_at_utc": "2026-09-01T00:00:00+00:00",
         "application": {"name": "ade-app", "version": "0.1.0"},
         "source_sha256": HASH,
@@ -97,7 +98,7 @@ def _document_manifest() -> dict[str, object]:
                 "segments": [
                     {
                         "segment_id": "p1-s0",
-                        "final_route": "terra",
+                        "final_route": "verification",
                         "segment_index": 0,
                         "final_score": 100.0,
                         "status": "accepted_quality",
@@ -179,6 +180,7 @@ def test_batch_manifest_validates_child_totals() -> None:
     usage = _usage()
     value = {
         **governance_policy_fields(),
+        "manifest_schema_version": 9,
         "file_count": 1,
         "successful_file_count": 1,
         "partial_file_count": 0,
