@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "pages": {
+    "/openwiki/architecture/data-contracts.md": {
+      "pageVersion": "sha256:4e6ab852ee792f143bc7dac8b78a239dd1c3e386848ea69788c9f6cdfd91b330",
+      "completedBy": "codex",
+      "completedRunId": "887e779f-415a-45b4-be56-ffff4e47db58",
+      "gitHead": "1da6df4361248c8d1f969ea46a3cae55f2bc28d4",
+      "sourceFingerprint": "sha256:3c70b6ac918456c2d16dad64d38ab476499ce115cca5f02e66b0fa900530965e"
+    },
+    "/openwiki/architecture/document-lifecycle.md": {
+      "pageVersion": "sha256:4582234db60c90570172f15e01b0e9822238ff667c08f035ef59af51884deb13",
+      "completedBy": "codex",
+      "completedRunId": "887e779f-415a-45b4-be56-ffff4e47db58",
+      "gitHead": "1da6df4361248c8d1f969ea46a3cae55f2bc28d4",
+      "sourceFingerprint": "sha256:3c70b6ac918456c2d16dad64d38ab476499ce115cca5f02e66b0fa900530965e"
+    },
+    "/openwiki/operations/command-line.md": {
+      "pageVersion": "sha256:3209d77f4cb4b20fff712e6d8a1a9c675a0640b30231388c15659b94c3a24e9c",
+      "completedBy": "codex",
+      "completedRunId": "887e779f-415a-45b4-be56-ffff4e47db58",
+      "gitHead": "1da6df4361248c8d1f969ea46a3cae55f2bc28d4",
+      "sourceFingerprint": "sha256:3c70b6ac918456c2d16dad64d38ab476499ce115cca5f02e66b0fa900530965e"
+    },
+    "/openwiki/operations/streamlit-app.md": {
+      "pageVersion": "sha256:a71d418d4c0aa7f2baf571a549fab9ed2c7f88694aa0a2d165e772cb940d5559",
+      "completedBy": "codex",
+      "completedRunId": "887e779f-415a-45b4-be56-ffff4e47db58",
+      "gitHead": "1da6df4361248c8d1f969ea46a3cae55f2bc28d4",
+      "sourceFingerprint": "sha256:3c70b6ac918456c2d16dad64d38ab476499ce115cca5f02e66b0fa900530965e"
+    },
+    "/openwiki/outputs/artifacts.md": {
+      "pageVersion": "sha256:11503683e5879e030301ca42cfa026e4678e38379005b8d7d40d85158a5011b3",
+      "completedBy": "codex",
+      "completedRunId": "887e779f-415a-45b4-be56-ffff4e47db58",
+      "gitHead": "1da6df4361248c8d1f969ea46a3cae55f2bc28d4",
+      "sourceFingerprint": "sha256:3c70b6ac918456c2d16dad64d38ab476499ce115cca5f02e66b0fa900530965e"
+    },
+    "/openwiki/prompts/prompt-contract.md": {
+      "pageVersion": "sha256:40ed0c2324914ab4dfc6c7e02cc91ec5b71037d83e350a168cb7361c1136ff5e",
+      "completedBy": "codex",
+      "completedRunId": "887e779f-415a-45b4-be56-ffff4e47db58",
+      "gitHead": "1da6df4361248c8d1f969ea46a3cae55f2bc28d4",
+      "sourceFingerprint": "sha256:3c70b6ac918456c2d16dad64d38ab476499ce115cca5f02e66b0fa900530965e"
+    },
+    "/openwiki/quickstart.md": {
+      "pageVersion": "sha256:c412379e0acbf50e2ef8c9098dc3491ac9de1a5dcf414726d340962554fed412",
+      "completedBy": "codex",
+      "completedRunId": "887e779f-415a-45b4-be56-ffff4e47db58",
+      "gitHead": "1da6df4361248c8d1f969ea46a3cae55f2bc28d4",
+      "sourceFingerprint": "sha256:3c70b6ac918456c2d16dad64d38ab476499ce115cca5f02e66b0fa900530965e"
+    },
+    "/openwiki/security/data-and-network-boundaries.md": {
+      "pageVersion": "sha256:3d2c95634c738cfd8055f0f65a90a053b25e48f6e6af99037525e1d23d5b96b4",
+      "completedBy": "codex",
+      "completedRunId": "887e779f-415a-45b4-be56-ffff4e47db58",
+      "gitHead": "1da6df4361248c8d1f969ea46a3cae55f2bc28d4",
+      "sourceFingerprint": "sha256:3c70b6ac918456c2d16dad64d38ab476499ce115cca5f02e66b0fa900530965e"
+    },
+    "/openwiki/testing/invariants.md": {
+      "pageVersion": "sha256:d817b02d24186c347c662bdc44d4abd0136ace26b4b83ee2b02abe97ab5276c7",
+      "completedBy": "codex",
+      "completedRunId": "887e779f-415a-45b4-be56-ffff4e47db58",
+      "gitHead": "1da6df4361248c8d1f969ea46a3cae55f2bc28d4",
+      "sourceFingerprint": "sha256:3c70b6ac918456c2d16dad64d38ab476499ce115cca5f02e66b0fa900530965e"
+    }
+  }
+}

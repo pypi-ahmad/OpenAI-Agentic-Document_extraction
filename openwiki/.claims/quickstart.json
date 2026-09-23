@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:c412379e0acbf50e2ef8c9098dc3491ac9de1a5dcf414726d340962554fed412",
+  "claims": [
+    {
+      "id": "claim_2c325b07372b49a3b31e70528a8bbefe",
+      "statement": "The repository README documents a Windows 11, Python 3.13, uv, and OPENAI_API_KEY setup using uv sync --group dev and launch.cmd, with the local app at 127.0.0.1:9674.",
+      "evidence": [
+        {
+          "resource": "repo://README.md#L13-L23",
+          "version": "repo-lines-v1:sha256:abec8bdfc30ad606bc2c36cea81640a023ccb049bf0913eadf02ba0a96af91fa:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljODYzNTMwOTQ1YzdlMWM0ZjgzYjRiMjIzMDNiNWNlYTI2NWJmNThmOTEyOGFlZjg2NjI0YTExYmZmYjA5YjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4MDI2NjE3YjFlNzYyZThkNzRhZWJhMzYwOGVmNTE0NzI0MTU1YmNlNGFhYjBlOTU2ZmUyYjRkOWU5YmY2NmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFkNTQ1NjM1YWY1MWE1NzMzY2IwZmNmMmEyNGE1OTYzZTE3ZDhjNmU5ZmVhZGFkNTYwNGYwNjhlOWQzMzkzOTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMyMmRjNDhhYTM1YmViZjNmNmQ1ZjA5ZTIxM2M4MzQ3ZTA2NTU1NGM0MWRhYTFmMjc4YTYyYWRiNjRhNzhkZDkifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_5eb135e928624322bcbc99af8064e5ce",
+      "statement": "The package exposes ade-parse as its console script, and the README documents page selection plus output directory and overwrite options.",
+      "evidence": [
+        {
+          "resource": "repo://README.md#L43-L51",
+          "version": "repo-lines-v1:sha256:35f2c133591b35f048d5ba583efa8ad1e34267644f88e7329a8101ddc645855d:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDg1OTNlYTBkNWU1MWUxNzYwMzU3MmI1OTNkOTdmYWM5Zjg3Mzc1MDhiNWFkNTNhOTliMWQ3YzllMWJiZjM2ZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiN2I4MDdjNTdmMjk2MzBhZDE5NTFmYzU5MDhlNzM2ZjlmNzRhZTliMzViNjdmNDE1OGZlZDI3NWVlMGZiNDIxMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjAxMzQ5ODEyOWVkNjA1ZWQwZjcxNDk4M2M1MjI4NjE0Y2NlZGJiMTkwYWUxNmEyNDlhM2VlOTI5ZjNhMzI0NCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYjdmMzIwMTgyZWE5YjEwYTNhNTE0OTlkOWI1YzY3MzkxYTE1Y2ZiNWFmNDIxOTBmMWFjYjU2MjI2NTVhYWIwOSJ9"
+        },
+        {
+          "resource": "repo://pyproject.toml#L20-L21",
+          "version": "repo-lines-v1:sha256:fb24d5034beab8f40bfe72acce4d59742807c9d583662b3fb946155abf87e125:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNGVhYjRlYzYzZGU1MTdkYTRjZDhlNWM4MzA3ZmIyYzc3MzdkMzkxOTBhYjY5ZjMyYTVlOWVmODFlYTQ0MTZkZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZDllMjIzMTBjYzBlYWUzYTczYjI4ZGU2MGE0OTA5OWNlNTQ0YmQ5MDBhM2M1MzlkM2E4M2ZiOWZiMTY0MTA3OSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2Y1ZjJiYzhlMzMxNDI0MjZlMGQxYzI5OWVhOTFjZWYyMGE1YjcwOTczMzExNjcyYjRiOWFkOWExNTJhMmM3YyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjAxNGYxZjFmN2JmMjY0Njg3ZjA4MTFmZDUwNjBkYjRhN2JmZjIzZThkMGRlM2M2NWU3OWViOGM3OTIyZDk3NCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_3d70b2183a6d4c73990242f4c8050b96",
+      "statement": "Pytest is configured to discover tests under tests, and parser tests replace the client with fakes.",
+      "evidence": [
+        {
+          "resource": "repo://pyproject.toml#L26-L28",
+          "version": "repo-lines-v1:sha256:10db616666c761aa584cc503d370136712e7c67b04fcb6d740eb5800866eeea8:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiODY3NmU2NDE0NjVhNjU1MWU5ZTljZmZkN2ZhYTFlNmE0MmY5YjcyNDgwOTgxM2M5MDNkN2VkY2I1MmYzMDA2ZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjMxYjVlYzEwZGM5NDE2NDdkNmIyOWUzZDgzODIwOGE2MjUwYjQ4MmM2MzMyNTRkZWU1ZTZhM2U0OGI2YzM5YSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZGRjMmI1YjA5NDQwNGExYmU0ZjdlY2Q5NjY1MDdmYTcyMGJkMjZiNzE0MmM1MGFlOWRiZGI3YzFhNDExNjY4YSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDY0NTA2MzNlYmRkZTYxOGRmZDU4Y2Y3OTdmZDYzNTQxYzRiYWQxMGZlNzdlMThjZjM5MGIzYjhlOTA3ZjI4OCJ9"
+        },
+        {
+          "resource": "repo://tests/test_parser.py#L15-L20",
+          "version": "repo-lines-v1:sha256:ea11b6afdddf58ec52d3c324726f09d13098dd96e97cad188acd2d7c51d619cd:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYWZhNzEzOTk5NWNiNjlmZDU4ODY1M2RmNmNmNTdkN2IwZTRhZDQxOTdhZTIyZjM0ZmMyOGQ5ZGM1YzE4MWVlMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTA2MDM4MWJiZGYzZTU1MzI4YjdmNWUzZWVjODQyN2I2NmM5OTViYWM3Y2IyYmNjZTE4ZGVmZGY3MjdkYjUyYiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMWJlYWIzYTA4OTNkYjFlMzRkZjM1NDA1ZTgzMmMzZTk1ZjA0OGViNzI5YTAyMzM5N2QzNGM1NzAzZTIzMzFiZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWJkNTJhNzQyNjJmOWVhMTY4NzQ0NzIzN2FjMDRiNmY2MDNjMmZiMDcxYzI5MWQ1OWNmMDZmZjUwZjY0Nzk3NiJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.5.2",
+    "at": "2026-09-23T14:47:54.995Z"
+  }
+}

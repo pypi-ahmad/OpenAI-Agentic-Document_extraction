@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:3209d77f4cb4b20fff712e6d8a1a9c675a0640b30231388c15659b94c3a24e9c",
+  "claims": [
+    {
+      "id": "claim_f957336891774c1b94d6db2b86bb49e0",
+      "statement": "The ade-parse CLI accepts a required input path, --pages defaulting to all pages, --output-dir, and --overwrite; omitted output directory defaults to <input-stem>.outputs beside the input.",
+      "evidence": [
+        {
+          "resource": "repo://pyproject.toml#L20-L21",
+          "version": "repo-lines-v1:sha256:fb24d5034beab8f40bfe72acce4d59742807c9d583662b3fb946155abf87e125:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNGVhYjRlYzYzZGU1MTdkYTRjZDhlNWM4MzA3ZmIyYzc3MzdkMzkxOTBhYjY5ZjMyYTVlOWVmODFlYTQ0MTZkZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZDllMjIzMTBjYzBlYWUzYTczYjI4ZGU2MGE0OTA5OWNlNTQ0YmQ5MDBhM2M1MzlkM2E4M2ZiOWZiMTY0MTA3OSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2Y1ZjJiYzhlMzMxNDI0MjZlMGQxYzI5OWVhOTFjZWYyMGE1YjcwOTczMzExNjcyYjRiOWFkOWExNTJhMmM3YyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjAxNGYxZjFmN2JmMjY0Njg3ZjA4MTFmZDUwNjBkYjRhN2JmZjIzZThkMGRlM2M2NWU3OWViOGM3OTIyZDk3NCJ9"
+        },
+        {
+          "resource": "repo://src/ade_app/cli.py#L13-L25",
+          "version": "repo-lines-v1:sha256:3b9cae58e10007fa43b10f11e03afe4e90a0675583c0a0bf4ea09b0a157c2159:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFiMzk3OTMzYTI0YTgwMWVlOTIzMzI3YmQ2OWEwMTA0OWMwNzc5MTUwMjFjZjJlYzM5ZGRhNGY4MWFhODM3ZTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQyYjVkY2Y3NWJiMDJjMjk3YjFlZGI3MThmOGE4NGM5MDljNjIyNjkyZGQ2ODA4NzU2OGM0ODBiNDk5OTZkYzQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkxMjk3YzE2Mjg4ODIxMTFiMThhOTlmOTcwMWIyMTExNTE3NmU0ODk3N2E1MmY5NTE5ODk3OTVkMWQwMWU0ZmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJmODViM2U3NDE3Mzk5YzNhOWE1M2UwZDkwMWNlZWIyNWQ1NGJhNTE4M2MzYzUzNzQ4NDRkYTZhZTZkMmU1ZTQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_ee79b89102784ecbb4da9963f5af7035",
+      "statement": "Without --overwrite the CLI preflights all output paths and raises before writing files when any target exists; with overwriting enabled it writes the generated files.",
+      "evidence": [
+        {
+          "resource": "repo://src/ade_app/cli.py#L38-L45",
+          "version": "repo-lines-v1:sha256:06b13de0f250212ea1643dd0ee423b5167d76fc2f1ab8c79240ed93fee4c849f:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZDliMDI5MGM3NTBhMTkyMWYxMDgyNTM4N2E2OTEyNWE3ODdkYmUzZTQzZmY0N2NhYzMyMWI1MzY5Nzk3MmM2MCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjVjOTAyMjNjMmFjZWQzZjJlZTIyYTBjNTJmOWU0NzBiNmZlZDBkZGEwMmYyMjQ2MDE3ZWYyMDUzYzBjMDg5YSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMTRiZTI4NmMyMWFlMTc5ZmI0NjM4ZGVkNGM2N2YzNDRmNmFkZGVhNjRjOTQ0YzE3MWRmMDdjZGIwYTgyYWIyMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODM3MTljYmExYWViOWQ5OGRiMDQzMjBkNDUzYzRmODJiZWUyNDA0OTEwNTBlMjNiNGQ4Y2JlNGY0NzEzYWM4NCJ9"
+        },
+        {
+          "resource": "repo://tests/test_cli.py#L24-L35",
+          "version": "repo-lines-v1:sha256:4e3c3be71e1d950d3be7340924b6935147a40f187a657ae91c17c5916d993a0c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY2YWRjNjljOWYyODdkNzE1OWMzNThlYmU4MWM0MDM4Yzg1MjdkYzQyYTA2ZWQ1ZjE5YTlmNDdlMGY0MDA3ZTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMTkyZjI0ZTAxMDAyODE2MTI5MWZiMzY4YzI0ZmE4NmNkZTYzMTRiNjFlNGVhMzFhMDkwM2UxZmEzNjJkZTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIwZjFmMWMwMzZjOTUxODNjZGY1MDAwN2Q1NGFiMDE2OWQwMWQ2ODU5ZDFiNWY0MDYwNTQ4MzE2MzlmMjc4MmIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_c9ed49de94094e679793d6a2db9c80b2",
+      "statement": "CLI exit status is 1 if any page failed, otherwise 2 if any page is partial, and 0 for all-ok pages; the CLI tests exercise these outcomes.",
+      "evidence": [
+        {
+          "resource": "repo://src/ade_app/cli.py#L48-L54",
+          "version": "repo-lines-v1:sha256:18db7a6f586539c0eab683d944db9052ce387900b36f4892eb7f95102c47ae9d:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOWJjNmIyZWRjOGM4ZGFlY2VmNTNiZTY5MmZlODU3ZDllYjBkZGRjZmQxODhiNmNkZjNiZjg4ZTAzODQwZTZjZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTYyMzNiM2ZmZWEzMmEyM2RmNTMwNjUzNDM0OGYyZGVlNzc2YTVhNmY3NGZiNTMzMTc1ZGRjNTM5YThmZTQ2NCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNmNiNDg4ZjQzN2U1NGJlZmMxYzNlMjY4MTQ5MTlmOGJlYTBhMDdmYzE5N2E4ZmU5ZmJmYmY1OGI0NTNkNTZiOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        },
+        {
+          "resource": "repo://tests/test_cli.py#L18-L21",
+          "version": "repo-lines-v1:sha256:4d5af4baf240479ddb8d4aee3da3c9ece3549fc83b46542cdd9a2b84e8985800:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNmZlMmFhNWYyYjM1YWQ1ZDM3YTFmZDc3YjVhYzExNzQxZWQ1ZWQ4NmVhY2YxYmUzNzQ0YTZhZWQ3MDhmODQzZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjI0MjNmNTk0MDY3MTU1ODVjMWY4N2IxOTcwYzJhY2E0ZWQ5NzQxNjg2NTA3ZTBmYWZjMjE2OGUxY2MxNWZiNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOGNjNGE3ZDFjYzc5NmFiYTNlNDY3MjMzMjdmNTE3ZTlmODExOTgyZDI1MGYwNzAyOTg2ZTRiNTc2NGFkOTU4OSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzlmM2ZhMTAwOTA4N2IzODZjNDliYTMwZjgwMDM2ZmZkOWNiYTUxYzJkOTU5MDg4YzBhMmRlYjM0YzBmNTNkYSJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.5.2",
+    "at": "2026-09-23T14:47:54.995Z"
+  }
+}

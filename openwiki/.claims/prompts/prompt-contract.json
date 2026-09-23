@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:40ed0c2324914ab4dfc6c7e02cc91ec5b71037d83e350a168cb7361c1136ff5e",
+  "claims": [
+    {
+      "id": "claim_08a18817dc9c43948c3e954dfc6dd394",
+      "statement": "The prompt loader only accepts plain Markdown filenames, rejects empty prompt content, and raises a ValueError when required formatting values are missing.",
+      "evidence": [
+        {
+          "resource": "repo://src/ade_app/prompts.py#L10-L25",
+          "version": "repo-lines-v1:sha256:98a05e11cd657b5f107c4e5146dc5a51e3df9c7d0714893df2bb2c0ec797c3d4:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhjYzAwMWExY2Q2Mzk1ZGIyMTBhYjZhMTdkZjE0MmJiYTM3ODFhYjQzM2ViZTBmNmQyNzRjMWUxNmE0MDUxODkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdhMmVmODc1NjBiZWEzZDYxNWI0NWM0MTgxYzM1Y2ZiNjE4Y2NkYjRjNTNhMTRhZjAzOTUyZjhiY2MwNjhkOTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc3ZTM3Njg4MzVkOTE3YjUxMmM1YzliZDhlODZkM2YzYTc5MWM1N2U3OTIwYzE2MjM5ODU2NzA3NGFkY2U5YTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA3MTU2YTEwZjVmYzYyODgxYzg2NjYwNjAzMDA2N2MzNzA2ZjIxZTk2OGQwY2FkZWI2Zjg0ZDQzZWIzN2U5YzEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_c290918ec8184cf183271512d6647e41",
+      "statement": "Page prompt selection has four context variants whose image order labels context pages as continuity-only and the target as the page to transcribe.",
+      "evidence": [
+        {
+          "resource": "repo://src/ade_app/prompts.py#L28-L39",
+          "version": "repo-lines-v1:sha256:9db26be8ddb17b282b497a6ed08a83a5278f764ea12d4acfc0583ae0bb2e1c52:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVmNTYzMGFiZDhkOWUxNGMxNjNhMTc4Nzc2MDI2Zjk3ZTcwZjU3ZTM1MDlhZWQ2YTYyZTc0ZTM4Mzk1NGEwYmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg2Mzk5NjFhZDM4MDhiODgxNTcxZjBhOWY5MjQwOWUxZmM3ZWJjYmI2YjU3ZTZiOTRmZDlhZTk3ZDAyOTNjYzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJjNTgzMDE0NGQwNTRiN2Y5MmVjZTAxZTFkNTU2MDAzNWI1MDA4MTJkZTE2YjZmMmEyYTk4ZDA0NGE5YmE0NzMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://src/ade_app/prompts/page_request_previous_next.md#L5-L12",
+          "version": "repo-lines-v1:sha256:f673e19d0c12d347292755d86734c650c18407e94a2c60e1ed6f940156e0749c:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZmQ0ZjE2MzU5OTZhNzlmZjU5MDQyMTA2N2Q1ODAyMWU5ZmI5N2U1MWY2MTZjNWQ2ZjViYWQ2YjBjNjZjMjUyOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODVkMDJmZjJiNjU1N2EzOTFlZDUwNGJiZjU5ODFmYWM3OWE0MWMzN2IwMWQ3ZGZhMGNkZTMwMjBjZmNmZThmOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2M5YTViMTFiMDIyY2EyZTQ4YjY5YzVhZGU4ZWI3MjI0ZjRiYjdiMDVmZWIxNjQ0ZjhlYmRmYTA1NzQyNjg5OCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_2132739e9a5744009c01fe00a6b3b78c",
+      "statement": "The main page prompt treats image contents as untrusted, asks for target-page structured blocks, and describes normalized boxes and bounded zoom requests; the crop prompt keeps boxes in full-page coordinates.",
+      "evidence": [
+        {
+          "resource": "repo://src/ade_app/prompts/crop_read.md#L6-L26",
+          "version": "repo-lines-v1:sha256:09cabd787495b903af2a5a122f7177264655394b482623ada812926d2f76c473:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMDUyZDM2OWVjNWM4YjFhNWRhYjExMTU3ZjVhOGJiZmIwODIwYmE2YmFjZDYzNjA3ZmY3YmY4ZTA4YzgzNGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMxYWY2ZGU0NzM5M2U5NGUwNDhkZGVkNmJiMzMzNTY2YzYxODZkNDkwMDYwODg3ZmRiMDk3ZDgwYjUxYjM3NTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJkZGVmNTllYWMxZWVmYTY1MWQzOTJiZTU3NzBmM2ExY2UyYTRlZjQ4YWFhNGQ5MTJhNWNlYzViOGJkMDVjZGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://src/ade_app/prompts/page_parse.md#L6-L44",
+          "version": "repo-lines-v1:sha256:0dedb49e35de7039f7a9987609b8e0a12ab6b436c7bf99ecf4fece664dfcb898:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMDUyZDM2OWVjNWM4YjFhNWRhYjExMTU3ZjVhOGJiZmIwODIwYmE2YmFjZDYzNjA3ZmY3YmY4ZTA4YzgzNGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMxYWY2ZGU0NzM5M2U5NGUwNDhkZGVkNmJiMzMzNTY2YzYxODZkNDkwMDYwODg3ZmRiMDk3ZDgwYjUxYjM3NTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY1ZTc5N2JjOGNjMjhjYjRiMTBhZjllMjgyNjAwMWE1Yjc4NjU0Yjk0NzI3YTk5OWU4MjAzOTk5MTQ2ZWY1YjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_57a1a1557fc248a6a67dead4b833063e",
+      "statement": "Prompt tests require exactly nine non-empty runtime Markdown templates, validate context-variant image markers and missing values, and reject path-containing prompt names.",
+      "evidence": [
+        {
+          "resource": "repo://tests/test_prompts.py#L12-L27",
+          "version": "repo-lines-v1:sha256:bbd147d5b58e8dc24f99402d701c3aff43ae7604f4b4bcfc82bff37b5ece985f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2OTJlMmM0ODRhZWMxZjEzN2ZmZDRmNjFjZTM2ZDY1ZTU2ZWU5NGZiMDFmNTE0NmQxNWFjNGJiYjg1ZmIwMGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4NjZhZGIwYTY2M2IxZDM3ZjVkZmM0NmM1NDI4ZWRiZDMzMDcwYjdhYTk0MzIzN2YwMzZjZTQwNjYwMTYyZjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgwMGEzOGVlMjE2MDlhZmRjODUzZTRiZjJmZmY3MWI3MGZiYmJiNDEwMTVlNjBiOTYwMjI2YTI1MTQ1MzU2NzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU2ODBiMGYyOTI4YWMwZGJmM2RkNGEzMWQ1YzE2ZTkxOThhMjlhNjA4NmQzOWNmYjU3YzIwZjYwYmUzM2E2NWQifQ"
+        },
+        {
+          "resource": "repo://tests/test_prompts.py#L30-L55",
+          "version": "repo-lines-v1:sha256:e81cee59c1dbb12e5de9fdbd7a0d29d6df3d5d22f565edb5b9001ef517f291f3:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmMzQ1ODNhNTk4NzY3YmY1NmFlZmViNjVlMjAzM2ExNjUxY2M0YzhkN2U2ZjBhZjNlNWNmZDMyOTNmOTMzYjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZiMjUwYTBiMmFlMDA0NDQ5MTMzYjgyZTQ3YjdlY2NlYzMwNzJmYjM2YjFkNjY2NzA2MzA3NThhMjhhNDkwNTciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc2MGZlMDk3NzQyNjQ4ZmRmY2E2NDA5MTg2NDgxOGIyNThjM2E2NGJlMDdmMWFiY2M2NGZjNmM1MGNmMjQ5MjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.5.2",
+    "at": "2026-09-23T14:47:54.995Z"
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:4e6ab852ee792f143bc7dac8b78a239dd1c3e386848ea69788c9f6cdfd91b330",
+  "claims": [
+    {
+      "id": "claim_815e49621b3445158df57948029b9af3",
+      "statement": "Parser response and result models forbid undeclared fields; boxes use coordinates bounded to 0..1 and must have positive area, while each page or crop read allows at most four zoom requests.",
+      "evidence": [
+        {
+          "resource": "repo://src/ade_app/models.py#L10-L24",
+          "version": "repo-lines-v1:sha256:8d0659c33093712470a5a360efdf7390b29659e79c064bb8131b494d9c255e9a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYyNzJhNTU4Yjc2YzE3MjAxNjhhOGU0YzFkZTNiZDgwNzUxODhlYTU2NzQ5M2FhMDBlNWVhNzYwZjM0NGVmOWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEyYWIwOTBiY2QxNjIwZmE2MmVhZWUxNTdhNzRmY2E2MzVhYTI5ZTEyY2JmZmQ2MThiNTc5MmQ4N2JjMDNhM2YiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU5ZjU5YjIwODQ3NDVmNDNjMTE1NzZhYzU2ODc4Y2I5NTA5ODU2MmJmZDUzNzQ3N2JjNzJmMjA1YjU1NDhiODUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFiYTNiYTllOTMyZGJjOTlmOGE4OGE2NzM0NTQ1NGIzODQ0ZThiOWFlMjVjNzQ4ZjIyZWUxM2Y0OGU3YjFiMTgifQ"
+        },
+        {
+          "resource": "repo://src/ade_app/models.py#L61-L70",
+          "version": "repo-lines-v1:sha256:6ede86d0a12bad61a8d13a49812d37f16d94b595a6bf59f432a0085c4fd1719d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkN2UxMTQ1MDQ4MzMyMmQyYWQ1MjNjMDhhYzNmYWIzNDVjMTA0NzRmZmFlMWFiZTMxNjg3NDFjNTM3MmE2NWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMzNmUzMzgxMGM4MTU2ZTM5Y2ZhNjA4MjdjZTRhODQ3NTNhOTFjNWY5ODVkZTExNWExOTE2MzJmMzVkOGMzMDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJmNTA0ZmFiOWY5ZDZmOTVlZDVhZjYwOWE1ZjRmODY4Mzg3MDlhOWUyYmVjOTBjNjAyNDlkMjlmNzE4YmM4MDYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUyZDZlMjVjM2ZiNGQ2Zjk2Njg3MTJiZWViOWVmYmRiYmNmZGVjNDRkY2RhMmY5MGZmYzNiMWI3OTJhMzEwNWQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_755e2f15ce5945419bc0b88e43de838e",
+      "statement": "Usage aggregation sums token and call counts and combines completeness with logical AND; page results use statuses ok, partial, or failed.",
+      "evidence": [
+        {
+          "resource": "repo://src/ade_app/models.py#L73-L101",
+          "version": "repo-lines-v1:sha256:d1e1581296fbebf3170b48a1bebcde7afd05ab92e7266d606c73efb7775f882a:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlZTQ4M2JhZWUwNjc1ZTQ2MTEwMDg0MGI1NWQ1YWYwZTJiMzhjMTU4ZGUyOTI3ZDYwZTJhNTcxNTA2MzVhZTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIzYmU1NGFiNTM5YjA2NDI5MmRmMTYwZDE2ZmQzYjczMjQyMDYwYWVmYWQ5NDBkZjQzYWI0NDgyN2E4NmY5YjgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNjYWU3MGY4YmViYWEwZDlmMjM3ZWJjZmQzMDBkZGVlOWZlMmJlZjdlZjRmYzVjNzk2YzhlMDNmOGZhMzU3YWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVkNjUwY2E4YTJjNTRjZjM3N2YxMDI4ZTliNmIwYTA5OGE4MjBhZTJkMTgyMGQzYjZhOGRkZjBmNjEzNjkyYmYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_48f43813c70d42ea8421b604372021cc",
+      "statement": "ParserConfig fixes gpt-6-sol and medium reasoning, defaults to 300 DPI, two zoom rounds, four crops per page, and a 300-second timeout, with the configured validation bounds.",
+      "evidence": [
+        {
+          "resource": "repo://src/ade_app/config.py#L10-L20",
+          "version": "repo-lines-v1:sha256:7a7a495abefa3159122e47dfc15eedde0725c51385f8d1021e1bd8f83d04e6ef:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYzMDY2YTA1NTEyOGM3YWUwZjRlOWYxZjdiYjgyNjM5MzdhNjcwMWNlMGZlNzE5MzI2NzI4YWMxMjYzNzhlODAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM3MjJiYTFlY2NmNmFkY2IwMGU1N2ZkOTRlMTFkOTAyODg2MDdmZmY0NDg0ZDc0NWE5ZjRkMWJmYzY5ZTRhZGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg2ODMzMzg3YTMyZTdhMTdkZTNiYmM0NTEyNmRhODliZWRlYTk4MGRkZDBlZTMzZTllYTk3ZWI3OGZjNzJhZmMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_abac56374fa44379b7692cc07211ded4",
+      "statement": "The model tests reject reversed box coordinates and five zoom requests in one PageRead.",
+      "evidence": [
+        {
+          "resource": "repo://tests/test_models.py#L7-L15",
+          "version": "repo-lines-v1:sha256:6bc3b1c58ac137fb6f0c63bc38292dd0fef403f511ddc97d71cac80af10ba396:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDdjYWMzMjQxZWVjZTY4ZWVmNzljYWQ0ZWIxZmFjOTYwYTMwM2I4MDM4MzExYTYwNTlkODZjYzFiOGQzNzZjYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYTViZWMwZTQzMWM0MjI2Yzk5NTdkODNmZmYzZDkyZDRiYmFhNjRiZjJmMzY0ZmQ1MTk1MjNiMjUyZmYyMjdmNSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjQ0N2M0MDlkZjk1OTUzOTY0ZTllNWY1NmUyZGM4OGI2MTA5NmUwNTE0ZTExZDNhOTdkNTZlZjFiYWI0Mzc5YiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.5.2",
+    "at": "2026-09-23T14:47:54.995Z"
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:11503683e5879e030301ca42cfa026e4678e38379005b8d7d40d85158a5011b3",
+  "claims": [
+    {
+      "id": "claim_51e7e16f4fbd40bcbbea7375ccba6f32",
+      "statement": "build_artifacts derives Markdown, JSON, HTML, annotated PDF, and a ZIP from the same DocumentResult, assets, and rendered pages; the ZIP includes those outputs and the asset files.",
+      "evidence": [
+        {
+          "resource": "repo://src/ade_app/artifacts.py#L36-L58",
+          "version": "repo-lines-v1:sha256:2b1bb44c8e197e9170386b6eb2a4573ad6935962644965dd59e2989957412e74:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc5NzA0NTMyOWI0MGZiZWVmZjk5YWUyOGYxMWU5NzdlNGRhYzUyZTVkZjMxMDIwYjI4N2Y0YTU5YzdhMDM1OTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJjNWZmOWIxMzcxMjQ1MzE4ZjFlNDAwYzRhMmFmOGU2OTY5ZThhMGE5ZWQ5NDk3ZGNmZWI3ZWUxYzY1MDdkNGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBlNDdiMTQ4YzMyYzMwM2JmMzMxZTg5ZjljMDE4ODhiNGVmZWQxMjc5YjJlOTJkOTA2NTFiNGQzOGM3Y2I2NDkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYwZGFiM2VjYjlkYTkxMmI4YWQxM2UwYmQ2ZmRkZmE4NGZjOWIwZDJhNTFjZGQwNWFlZGM5OGNlZmQ4MWZlYTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_e27717e7fe304bf598abe8a4bd27b391",
+      "statement": "HTML generation embeds referenced PNG assets as data URLs, renders Markdown, then applies nh3 with explicit tags, attributes, and the data URL scheme.",
+      "evidence": [
+        {
+          "resource": "repo://src/ade_app/artifacts.py#L75-L129",
+          "version": "repo-lines-v1:sha256:8c6a2c84fe9bd50f9a2f0cf54615d0489af585d2b183b625685b4aeca6efb6c4:eyJzZWxlY3RlZExpbmVDb3VudCI6NTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxMjMzNzcyMzU0YmFhNDFmNmUzZmJjYTNhMjg3ODAwZWViNGM4MmM2ZGVjN2FiOTQwOWRhZGQ3Yzc4YTM3YTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMwYzFmMTg4ZjE0MmVkN2E4MjQ2ODBiMjA3MTcyYzU1MTliYzYxNGE0OGZkYTdjZjE2N2VkYjhkZGY3OTk1NmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhlYjM0N2Q2NDVlZjYxZTQ1YTY3ZTQyZDFkYjJmYTdlZjc1NmU5ZWQ0ZDYxNWIwZjdhNzBiYjFkZThiMzM3YWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM1NmMzZWYzZWEyNDA3MzllZTYxYWNjNWNlY2FmMDU0ZWVhNjkxYjU5Njc5YzJjMjUyMTgzZTExMzYzOWE5YWUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_fb4c16bb8d8b4ee9acc36509c2b63b25",
+      "statement": "The annotated PDF places the rendered page image and draws rectangles and ID/type labels for parsed block boxes.",
+      "evidence": [
+        {
+          "resource": "repo://src/ade_app/artifacts.py#L132-L156",
+          "version": "repo-lines-v1:sha256:7b05e6dbb315d4f35e042dd26033fd9e703fff829fd4493d1b034b38c865b449:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNiNGM3NjE5Mjg3ZWQwZjQ4MWY0NDIxMDM1Yzc2ZmViYzBiNTc2MDQ1YjYzNDZmNDZkZDVmMGQ3MWYwOWM0ZmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNjZjYxNjViYjAzM2JlNTRhMjE1OGY4YjBlNTcyZDg2ZjJjNTU5ODQzNTRkYjI3NDNmZWNhOWNhMjIzYjVkMGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhjYzRhN2QxY2M3OTZhYmEzZTQ2NzIzMzI3ZjUxN2U5ZjgxMTk4MmQyNTBmMDcwMjk4NmU0YjU3NjRhZDk1ODkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI1NWY0NDg2ZmZiZmVmNTIyZmZhOTI4M2ZhYjI0MDhhNTk2MzJmNTEwY2RkNGU3YTQzMGU5MGMxMDhhMGRiMWMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_016eacfe51864ce88405c90a1a645341",
+      "statement": "Estimated cost returns None when usage.complete is false; tests check script removal, embedded image data URLs, ZIP members, and suppression for incomplete usage.",
+      "evidence": [
+        {
+          "resource": "repo://src/ade_app/artifacts.py#L61-L72",
+          "version": "repo-lines-v1:sha256:a0475447823e4eae9f872da1647293387b3d09d0a77992f2c456ea3cdc0c1edc:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2M2NiZmNhZGY3YmY3MTIyMmU0Y2MzYTFjODJiOGZlMTNhMDUwZTAzMzJkN2UyOTFjZjlhMWVhMzVhODNlN2IiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0YjM3NGVlMjU1NTQ2M2NhZGQzMDVhOTA5MTE2MmNiMTFhMDJhZGJmNjMzNDZlMjJmYmUwNmZhMzdiNGYwNjEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYzMDZmMWMyZWFkYjc3NjYzNGI5NDdlMjk5Y2E3Y2RlNjM3NGYzYzBkMDliNjA5MWIyMDgzOWUzNDIyZWVjMWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNmYTBiMTc5ZjExZTQyNDY4ZDIwMjNkYTY3Njc1YzFlNGUzYmMzY2E4OTNkMTM2ODVhYjI5NzZhOWRiNzFhMTkifQ"
+        },
+        {
+          "resource": "repo://tests/test_artifacts.py#L10-L43",
+          "version": "repo-lines-v1:sha256:c105bb511ed36b33942939c7fd6eb0e18bba6e87cb38d99da6c55ead27a7006d:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZmYzgxYjgwNDRiNWY2MDIwYWI2YTM0MmZjZWZkNjE2ZGJkNzNjMDJhMjBmZjZhNzA0ZjhjZWI0MDhkZjA0NGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE3OTI0OTRjMjY1M2E4ODkyYjFkMDAxMjkwYjJiZGQzMjRhN2NjYTIyZTYwNGE5YjM1NDAzMTA0MGI1MWM0ZDAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdkOTAwNDQ1ZjIxZTZlNzc1NGE3ZjQyZTY1Yjc4NWMwNjVlYTM3OGY1OTY0NGI3YzEwOGM0MzY4OGFkNmQ4N2QiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.5.2",
+    "at": "2026-09-23T14:47:54.995Z"
+  }
+}

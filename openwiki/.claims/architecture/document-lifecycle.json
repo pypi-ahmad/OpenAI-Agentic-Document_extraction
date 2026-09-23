@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:4582234db60c90570172f15e01b0e9822238ff667c08f035ef59af51884deb13",
+  "claims": [
+    {
+      "id": "claim_91c2e95b52b542daad305380ded6a381",
+      "statement": "DocumentInput validates plain safe filenames, supported suffixes, non-empty content, and a 200 MB maximum; page ranges are one-based, inclusive, and an empty range selects every page.",
+      "evidence": [
+        {
+          "resource": "repo://src/ade_app/inputs.py#L15-L43",
+          "version": "repo-lines-v1:sha256:c1db9f2be8fdb1bc294475bca9a35c3c37d6e05a5cded9924030eb2deae711cf:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI2MjA4MTE1OTBlMWRhMDFhNGE1ZmM0MDhjODZkNzkyZWE5OTU0YWY2ZThkNGUzMDk2YTRiZGYwNzQ5NmM0ZGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlZmI0ZDVlNTlmM2YzYjAwYmZiYmY3ZDFlODUyYTFiZGZjYjgxYTFmNjc3ZWZmYTU1NDZmNTBlNWVhOTJiYWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJhYjI5NzM5YjUxZTgwNGNkN2VhODRlZGRlODE2ZDVlYjkwOGU1NmVmN2U2MDVmYzBmNzEwNjEyZjQ5MDEyNjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJiYjEwODlhNDFjYjI1MzA0ZGI0MzYwYWYzMzhkMzM4ZGIwYWJhMjQ4YzYxMzI2NDliYjdkYTg4YTYzMWRhZTcifQ"
+        },
+        {
+          "resource": "repo://src/ade_app/inputs.py#L54-L83",
+          "version": "repo-lines-v1:sha256:36cc50ba8359d4fae24149837b5a46018c8840496ff7126b443e354a8d39cd5e:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdmOGVjZDlhNzUzY2JkNmQwNTg4MmExNmE0OWEyMzFkYzQ4MDAzMjZmNGUwNDIzMjllZGIyYWM5ODliMzBlMDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY3NDliNDVhN2Q0M2I4ODhkNTJjNWUyNGZiN2M2M2E3Y2VlODU0ZTdjOGU3MWJhMTEyNmQxNTUzMjJkZTYyMDAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNjNGNhMTY4ZWVmZmJjMDBjMmRmNDQ0NTQxZDI0MmJiMzhhYjVjNDUzMTgwNGYwMDJlNGYxZjIzYzZmYmM1ZDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_f31cef0082304d0290ee36174938d083",
+      "statement": "parse_document rasterizes selected pages, passes adjacent selected rendered pages as context around each target page, and invokes each model request with store=False and original image detail.",
+      "evidence": [
+        {
+          "resource": "repo://src/ade_app/parser.py#L127-L159",
+          "version": "repo-lines-v1:sha256:3852cc2356fd20b073d7bc9e7d808a276424136f08de3f680147be93671fb221:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFlNWM1Y2ExYThmODBhOGZhYjA3NzgxODRmNzY3NzJjOTU0N2QxNGJjNDE0YTc0MWQ1ODYxNGI1NjQ0OGE4ODYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5MDlhNTNhNjE4ZDAyOGUxZDMwMDBjMGE3YWJjZWVjYmU1ZmIzN2Y0ZTUxMWVmZTQ2NjQzZmFkNmU2Njg3MmYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRmZTdhMmJhZWY3MWRjZGQzY2FlOGI1MWViOTE5YmRhNTRjNDQ1M2IxZWUxMGIzNzU5Njk3OWNmYjkxZWI4MTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRlOTdiY2Y0OWM4OTJkNjE1YTE3ZjgxODVjZjBjYTE3NzQ3MjBiZjdkNDE1ZTM5MzEwODE1MGJiOGQ3Y2MzZmEifQ"
+        },
+        {
+          "resource": "repo://src/ade_app/parser.py#L363-L369",
+          "version": "repo-lines-v1:sha256:ab325345fbe5af5c71ee43aebf5932c6389f569429ca8f5984a68dbfd063e1ef:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTE4ZjRmNzc4MGU1NDNiOWRjN2JlYjRlNjBiZGE1ZWExZjIzOWQwM2U5ODJiMDE4ZGM3MTViYmJjZWJjZTIxZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDg5M2Y0MGUzNzgxZWI4OTZjODJkMDQ2YTA4MDY3YTExZTM1Y2RmMmYxZGZhZjI2ZmVhOTBiOGRiNjY3NjQxMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOGNjNGE3ZDFjYzc5NmFiYTNlNDY3MjMzMjdmNTE3ZTlmODExOTgyZDI1MGYwNzAyOTg2ZTRiNTc2NGFkOTU4OSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        },
+        {
+          "resource": "repo://src/ade_app/parser.py#L75-L94",
+          "version": "repo-lines-v1:sha256:5c6c08895a40076b5c3cbf11e548e0fb383c8971b88e5c1f1eb7654f0d23d9e2:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYxMGMxYjJlNmRjZmUyZjUwM2ZmNDBjODFjMjUzZjQ4ZDQzY2QyZTEyMzQ5MGQyMmZmMWNkNmNiNDdjYThkYjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljZmM3ODcwMGExM2M0YjA2NzhmNGNlZWNjYWM0NDUxMDMxNjc3MjM3NjJjZDg0YmE1ZmYxMDM1YzRkMTM3MDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYxMjVkZGEwNjM5M2ZiOGY4ZjA2MmI5NzU1ZmNlZWFkYTcwYzFiY2ZhOGUzMDkyNTc1N2NhOGE2MGU1YzIwZTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI5NWFlNmI4ZjhlOTE4MzM3YTNiYzMyODg3YzE0YzNlMWI2ZmRlNjljNjM4MmQzODUxYjY4MmZhYzNhYmE2ZGEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_7f518a9fa263408dbee9ebdac2cf865d",
+      "statement": "When a structured page read is incomplete, the parser attempts a full-page Markdown fallback; unsuccessful fallback produces a retained failed page, while warning-bearing recovered pages are partial.",
+      "evidence": [
+        {
+          "resource": "repo://src/ade_app/parser.py#L147-L185",
+          "version": "repo-lines-v1:sha256:4a0c6d4f7c4f45adf84d35def0d92247065b02ec3a1480c8db75403bcab72368:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkYTVjNjZlMTdiMTQ1Mzk3ODM0YjhjODU0ZGM0MTkzZTIxMjUxODBhODk5NmExNGMzMTg4MzMyNmIyZWZiY2YiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5MDlhNTNhNjE4ZDAyOGUxZDMwMDBjMGE3YWJjZWVjYmU1ZmIzN2Y0ZTUxMWVmZTQ2NjQzZmFkNmU2Njg3MmYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ5Y2JkMWZhMmY4ZmVlOTdlYTE3Mjk2YTc4ZWVlN2RlNTE3YzRmNjUwZDA4NGU2OThmYzBhMTQ1MjhkNDgwODIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg1MTAxOGYwYzVlNzg0MjAxYjdiM2YzYjkxNTgwMmYxNWQ3YTk4MGJjMjBiNjVmNTU3YTU5N2MzODI0OTE1OWYifQ"
+        },
+        {
+          "resource": "repo://src/ade_app/parser.py#L218-L225",
+          "version": "repo-lines-v1:sha256:59f06ee10125470812147c83a19f47803352739d6ea7cc09e1d8c8a0b11e1238:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjUxNTg0NzViNGNhZmZlODg3NzkwM2ExZTBiNzYxMWYyOWE2YmNlYTFjZDNhZDkzNzEyY2I5ZmMzNDkzZDcwZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTVhZDBmMTNiZmQ4ZDRjMzc0MmIwMzJkODQ0ZGQ3MGFjOGRmMGNjYzNlNGEyOTg3MWM3ODlmZDg5Mjc4YjE2NSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjI0OTQyY2M5MTUxYTFlNGMxMjBiMDkzMmUyZjQ1NGFhNDg4M2E4ZWRkYjcwZWZkMTBkMDc4OWE1YjAwNjY2NCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOGNjNGE3ZDFjYzc5NmFiYTNlNDY3MjMzMjdmNTE3ZTlmODExOTgyZDI1MGYwNzAyOTg2ZTRiNTc2NGFkOTU4OSJ9"
+        },
+        {
+          "resource": "repo://src/ade_app/parser.py#L92-L106",
+          "version": "repo-lines-v1:sha256:6f6def516b0c8db42b8001471540753d752ac3d5feaa5c2f0a7b88f016656776:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI1NjljYjA5MjgwZWUwNzgxOTQ1ZTQ4ZDQwNDFiZDJkZmFhZTY5MWFkMmVhYmY1ZDNjYmEwODQ2YzcyMTZjYWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU1MDMyZTk2NGQwOTMyMzUxZTVkMTg1MjY5MjgxYjE3MWEzYTA5YjA4YjI4NmU2NjFlYTQ3MDMyM2M4MmViNGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFlMzEwYzA3ZjEwMzQ2NTUzNmI1YzA5OTNlNjBkMzRiZjdhZDUyY2QxODJiMDg0ZGI0YmU5NmZjMDU3Njc5ZTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk4NGVkNzM1OGQ2NjgzMDZkMDNiYjM1ZTI4NjE2YjRhZGEyMDFmOTliOGNlYWQ0ZjZkNWRmNWI5NDFmYTJhMDIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_3f9f76d9e64b4ae2aa9a9fe2619fd807",
+      "statement": "Crop rereads are bounded by configured rounds and per-page crop count; replacement blocks are merged by ID, failed crops preserve the full-page reading, and unresolved requests produce a limit warning.",
+      "evidence": [
+        {
+          "resource": "repo://src/ade_app/config.py#L10-L16",
+          "version": "repo-lines-v1:sha256:2eeb8a7e62c246fd911edd3d07233afb1666f5652688c4b9ddae8ea970221d77:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjMwNjZhMDU1MTI4YzdhZTBmNGU5ZjFmN2JiODI2MzkzN2E2NzAxY2UwZmU3MTkzMjY3MjhhYzEyNjM3OGU4MCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGIzY2RmNTViYzdlYzFiZjliZjE3MWIyYjgzYzdjMzBjNzAzMWFjN2YzZjFiZWM2NGIxYzc5MGQ4ZTBmNjFiNyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODY4MzMzODdhMzJlN2ExN2RlM2JiYzQ1MTI2ZGE4OWJlZGVhOTgwZGRkMGVlMzNlOWVhOTdlYjc4ZmM3MmFmYyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMWExNjU0ODgxNWIwZjNiMzFiMDI4NzQ5NzgzZTRhYzVhNTMxOTE4NjIxNWQzNGYzZjRiZjVjMTlhNmY5OGQ3YyJ9"
+        },
+        {
+          "resource": "repo://src/ade_app/parser.py#L186-L225",
+          "version": "repo-lines-v1:sha256:f23eb436417d890da59c2c2b9b224b3a53925bd1b544aeae28aa109a1984ecf1:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgwMWE3YWMzYWYzNTJiMTE5NGYzMmE0OGY0OThlZjZkZjI4ZTI5NjMzMWI4NDRlNDEwYWVmMmQ0ZjE4ZThhZmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1YWQwZjEzYmZkOGQ0YzM3NDJiMDMyZDg0NGRkNzBhYzhkZjBjY2MzZTRhMjk4NzFjNzg5ZmQ4OTI3OGIxNjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE3MTAxNzA2NWI2MTNkNWU5NWU4ZmU0ZjRiYzE0YmQwOGMxNmU5YWU4NGI2YmY5YTljYjRlNTIyNTUwNWI4YmUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhjYzRhN2QxY2M3OTZhYmEzZTQ2NzIzMzI3ZjUxN2U5ZjgxMTk4MmQyNTBmMDcwMjk4NmU0YjU3NjRhZDk1ODkifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_25d88d86e072468caf181c33ecd424ac",
+      "statement": "Parser tests use fake response clients to cover successful adaptive reading, partial Markdown fallback, and retaining failed pages.",
+      "evidence": [
+        {
+          "resource": "repo://tests/test_parser.py#L15-L49",
+          "version": "repo-lines-v1:sha256:f47e0123af6703f2eaacf151fe696215d19c1caa0f7fabe8e4e9dd6c8d343e16:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmYTcxMzk5OTVjYjY5ZmQ1ODg2NTNkZjZjZjU3ZDdiMGU0YWQ0MTk3YWUyMmYzNGZjMjhkOWRjNWMxODFlZTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5YzNjZWViZDFkZDY5NzJmOTk0Zjg1ZjcxNGFjMTNlMjIzMTczMGExNzM1YzUwODhmNTU5NTE2NzhiYzc4MzEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFiZWFiM2EwODkzZGIxZTM0ZGYzNTQwNWU4MzJjM2U5NWYwNDhlYjcyOWEwMjMzOTdkMzRjNTcwM2UyMzMxYmUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRlYzliZDYzMGQyZTFiODU4MGQ0NTQxZmRmNzA1MmIzNzlhOWI0NzNlMWQzNWZhYjQwZGE4YjZjZDY3NTI2Y2IifQ"
+        },
+        {
+          "resource": "repo://tests/test_parser.py#L52-L78",
+          "version": "repo-lines-v1:sha256:ae5e040a8b5fa382041be991ea93c04ef3cf99ab34631f5c8b3174a29e242cc0:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVhMmViZjg5MGJiNWVhNDNhODVlMjFjYTA2NmQ4MDFjMjVmOGNmNzFhZTZhOWZkYzg3NDllMDcwNGIzN2E4M2MiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMwYzFmMTg4ZjE0MmVkN2E4MjQ2ODBiMjA3MTcyYzU1MTliYzYxNGE0OGZkYTdjZjE2N2VkYjhkZGY3OTk1NmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzZGI5ZDUxNTg3NzVjNTc2OTMyYzAwZDU2MTg5ZmFiMzllZmIyM2I1NTFhZTU1ZDhmMTM5ODk0ZWRiOTQyNjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQyYmJjNWRkN2NkMzk0NjkxNjgxYWY1NzUwMjM5NzJhMjI1ZGRmOTZiZDQ0M2I1YWU4YWRhN2RjZTQzY2E2M2IifQ"
+        },
+        {
+          "resource": "repo://tests/test_parser.py#L99-L136",
+          "version": "repo-lines-v1:sha256:27f41e50412fc22fd26b008342221037db3060418f6e9e43ab594a1230e59818:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQwY2Q2ZjVhYzRjZjhhZjc0NGZiYzJiYmY4ODY2Y2Q1Nzk1MmU0MTBlNGIxZDY4NTBjODNiZGM1ZTczZWExMGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0MDRhNjAzOWVmZDU4YmI4MTc0Y2RiMTI5MzM3ZTMyYTNhN2MwMDE2ZmY3NWUwNTZiMWIyNjViYzM5NDRjOGYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ0OTg5YzIwYTFiOGVmZDExZThhMjBhMmFkZjE1MDU2N2YzMjE3Y2JlM2IwZWE5MDQwYzdkNWY4NjhmMDRhNDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.5.2",
+    "at": "2026-09-23T14:47:54.995Z"
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:a71d418d4c0aa7f2baf571a549fab9ed2c7f88694aa0a2d165e772cb940d5559",
+  "claims": [
+    {
+      "id": "claim_049130248f854e66879fbb7c9af884f8",
+      "statement": "The Streamlit app stops unless its configured bind address is loopback; its interface limits selections to 20 files and 100 batch pages and requires an authorization checkbox before enabling parsing.",
+      "evidence": [
+        {
+          "resource": "repo://streamlit_app.py#L152-L169",
+          "version": "repo-lines-v1:sha256:7e5175c2f81a06610546ba4dcff4f8fcfa4ff617e08c1b77f7e9b34900a30b70:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4NjY3ZGI1ODg4Njg3MWUyMWYyNTBlNmM0N2EyOTEzMjg0ZTk5ODUzZjMwMzBiM2YxZjhmZDNmZTc3ZWM1NTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMwYzFmMTg4ZjE0MmVkN2E4MjQ2ODBiMjA3MTcyYzU1MTliYzYxNGE0OGZkYTdjZjE2N2VkYjhkZGY3OTk1NmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhjYzRhN2QxY2M3OTZhYmEzZTQ2NzIzMzI3ZjUxN2U5ZjgxMTk4MmQyNTBmMDcwMjk4NmU0YjU3NjRhZDk1ODkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg4N2M4NjRjMTdiMWZlZTAxY2M2MDJkNTUzMDZkMDllMDhkYmViYjYzNGRhZDUwMzVhNWQ3ZjI1M2ZlOTRmNjIifQ"
+        },
+        {
+          "resource": "repo://streamlit_app.py#L176-L212",
+          "version": "repo-lines-v1:sha256:24bb6e5dde8654059e54ffc9921ff52d011df3d7dff99ed9c7cae33aea39335b:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFiM2I3NWIzYmI2N2Y1NzFmMjJmNzRkMzljOTdmYTJmOWViMjAxNmI4MWRmNmViNjg5YmQ1NWYxMDJlZTgwOWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMwYzFmMTg4ZjE0MmVkN2E4MjQ2ODBiMjA3MTcyYzU1MTliYzYxNGE0OGZkYTdjZjE2N2VkYjhkZGY3OTk1NmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJmYjAzYmFkY2ZhMzg0YjM5ZDQzY2MzODQwMDdhMWQyNDE3YjMxNGY5OGZlOTU5ZjkyNDMwNTZlZDUzMjk2N2UiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRhMzY5ZDU4MmNiMWI3ZmVmYThkYmU3NmY3Zjc2YzE3NDUyZmM5NzY0NTI0OWFjNjYyNDVjMzY2ZTExNjc2YWYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_8ffab71bf4054c65be750f74841ccec3",
+      "statement": "The app validates uploaded files, calculates page counts, permits contiguous start/end selection, and provides a preview before parsing.",
+      "evidence": [
+        {
+          "resource": "repo://streamlit_app.py#L170-L201",
+          "version": "repo-lines-v1:sha256:d30cd990652e4278547f188add401c63ef5f9566dd8564c440901a5b8e2f41a9:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNjMTk4NDEzN2FlOTcxZjJkYmJjZjJmMGU2NjhkM2IxNjgwZjFkZmJlZmU5Y2Q0NTMxYjE0YThiZmRlNGE1MzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY3NmY3MmQ1NzAyMmQyMTJmN2Y1MDNmNmU5NTg2MGZiZGYyNmRjM2YyOTkwYTliZjEyMzg5YmY4MzFkMjhkNWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFlOTg0NmZkY2JkNDc5YzhhYzlkYzQ2MjRlYTlhNjQ4YTA3Yjc4NjI0OTNkYmFjOTdiZjBjYzYyYjM3MDcwMDUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBkYmZkMjVlZDAxODk4N2IxYjA1MWUyYjI3NTNhMTgwM2FhZjBmMjIxMTg4NjFlZWM4NDNhYmI5YjA0OTRhMTMifQ"
+        },
+        {
+          "resource": "repo://streamlit_app.py#L217-L219",
+          "version": "repo-lines-v1:sha256:0b6d306dea6ce63b71ba94b83af3c686ea2138736d4b400711e58290b833800a:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOGVhMmQ0ZmE4NzA4ZmZmOTUxOWExMTljY2JkZGVmMzkwNmMwM2FmYjYyZTk2Mjc2NTM0ZmEwZDJiOTdjNDIzZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMWVhZDRhOGJkZjExYTMzMmE4MDM0ZTk5NTQ2YjkxZDc4NmY0YzM2NGI3MThhODM2OTRkOWVjYjM1YThjYWU2ZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYWM3MjExNjUyMWQ3MmE5YzI1YTcxNjM3MTJlZWJkY2Q2N2Q2NGM0Nzg2N2E5OTVjNWViM2RiZjliMzQyNDMzZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNTc5NzYxNTRjMTE2ZmI0YmM0NGFmZDFhMjI2OTdjZmU5NzU4NzQ1OTQzMWJlZjIyN2RiYjNmNGIzMDZjNTdlYyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_3217acef093f4522b81257e10a7df982",
+      "statement": "Session results are cached using a digest of file bytes and selected page tuple; Reset clears the session parse_results mapping.",
+      "evidence": [
+        {
+          "resource": "repo://streamlit_app.py#L158-L158",
+          "version": "repo-lines-v1:sha256:abb8f9487abd3b02ef9bcdb1857f6f78ae31e1511b52916accc3631d423b8544:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYWJiOGY5NDg3YWJkM2IwMmVmOWJjZGIxODU3ZjZmNzhhZTMxZTE1MTFiNTI5MTZhY2NjMzYzMWQ0MjNiODU0NCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYWJiOGY5NDg3YWJkM2IwMmVmOWJjZGIxODU3ZjZmNzhhZTMxZTE1MTFiNTI5MTZhY2NjMzYzMWQ0MjNiODU0NCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZWNiMWQzOTAzZjU4OTA5NzE4YjI2NWY3ZTE1MThiYTRiOGY0ODdiNjcwZjdmODA5MjNlMmYxODI3NjBhZDYyMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNjAwMjFiYmY2ZjZhZDM2YWQ0NmRjMWYzNmI4NTM2YmVhMmRkOGQ2ZDgxNDQ5MGUyZDM4MWIxNzE5YjgyOWY5NCJ9"
+        },
+        {
+          "resource": "repo://streamlit_app.py#L213-L215",
+          "version": "repo-lines-v1:sha256:4a369d582cb1b7fefa8dbe76f7f76c17452fc97645249ac66245c366e11676af:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTZkNDRkMGFmYTU3NGRjMTM5ZGMxMjZjZDdmYTUzZWE5MTA3ZjFkYTkwNmVhNDQ2YjlhYTc5MGQxYzE2YTBiMyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMzM5YTA0ZmFlZTEwNjY5MDAxZDlhMjY0YWUzNjI1ZjFlYTA1ZTllNGE2MWI2MTlhODZlNGMwZGEzNGY5MjdhOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWE3ZjgxNzBmM2YyYjYwZmM0ZGFlMTg1MTU0OGE5Njc4NTM1NjNkN2EzMzI0NDE2ZDcwY2VmNTc5NTE5ZjIwOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNDE1OWNjOWI1Y2EzZDhmOGM3NGZmNzk1OThhMTM2MzVhZmYwM2YzZTEzMjNkY2JkM2MyMmUzZGI1NWM5NDcyNSJ9"
+        },
+        {
+          "resource": "repo://streamlit_app.py#L221-L245",
+          "version": "repo-lines-v1:sha256:d652b42c0c123bc983afec6b5aba720df8433111c3863298285907f74cc647ca:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgxZThhYjA5YmRiNTk2ZWM0YWI2ZTVjZmY2YjMwYWFjOTY1Mjg5YzlmNmRiZjhhNGI0ZmNjYWVlMjc1OGRlNzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNmYTM0NjRiMjdmYWRlYTFkNGUwZGM1MzUzODNhODdkMjBjYTg2ZjAyMzk1MzNkNDI0YTc4MTg5MTI2MGVlOTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMzZDAwNDRjMTY2ZGI0Mzk3ZmNlOWRhNGU5ZWYzOGJmOTYyNGI2MDc2NTk0YmM3NmIzNDJlNmNmZTk1OTM0ZGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNkYTBjMmI3YjAyNTAzMzM0OGRmOGE4ZTMyMzcxMmI2YjI1NjNmOTA3YmQ0NTczMTY2MmNlZGI4MmRkMzA3ZDEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_d71d86f7258943c6b753ff6e6a908ac1",
+      "statement": "The UI presents Markdown, annotated PDF, HTML, and JSON views/downloads plus a download-all ZIP, along with usage and parsing warnings.",
+      "evidence": [
+        {
+          "resource": "repo://streamlit_app.py#L66-L149",
+          "version": "repo-lines-v1:sha256:2b01d9e57163299bcc89588baa5f133035f638af2006721185540f3e179737e4:eyJzZWxlY3RlZExpbmVDb3VudCI6ODQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM5MmYzZTQ4N2MxNjYyMzFlMjM2NjhkNWVlYmUxM2I5MjFhODdkMmUxNTYyZDU5ODBlZGFiMzFkOGRjZGNkYjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMwYzFmMTg4ZjE0MmVkN2E4MjQ2ODBiMjA3MTcyYzU1MTliYzYxNGE0OGZkYTdjZjE2N2VkYjhkZGY3OTk1NmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQyNDFlYTA0ODdlYjIwMTE5ODY5OWExNzhlOWE4ODg1ODg1ODQ3MmViMWE4NDA0ZWUzOGIwMmUzYjY3NjJiMjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVkNGRjZmM3NjZlNjFjYjYzMDE3NjBlNTE1NGI1ZTEzOThlOWIzYTg0OTkzZWZjM2EyNjkwZjQ5NjAxMjYzMDgifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.5.2",
+    "at": "2026-09-23T14:47:54.995Z"
+  }
+}
