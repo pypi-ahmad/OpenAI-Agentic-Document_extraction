@@ -1,0 +1,344 @@
+{
+  "communities": {
+    "0": [
+      "basemodel",
+      "decimal",
+      "model_validator",
+      "pydantic",
+      "src_ade_app_config",
+      "src_ade_app_config_rationale_1",
+      "src_ade_app_models",
+      "src_ade_app_models_block",
+      "src_ade_app_models_box",
+      "src_ade_app_models_box_ordered",
+      "src_ade_app_models_cropread",
+      "src_ade_app_models_pageread",
+      "src_ade_app_models_rationale_1",
+      "src_ade_app_models_strictmodel",
+      "src_ade_app_models_zoomrequest",
+      "tests_test_models",
+      "tests_test_models_test_box_requires_ordered_normalized_coordinates",
+      "tests_test_models_test_page_read_limits_zoom_requests",
+      "tests_test_parser",
+      "tests_test_parser_failedresponses",
+      "tests_test_parser_failedresponses_create",
+      "tests_test_parser_failedresponses_parse",
+      "tests_test_parser_fakeresponses",
+      "tests_test_parser_fakeresponses_init",
+      "tests_test_parser_fakeresponses_parse",
+      "tests_test_parser_retryresponses",
+      "tests_test_parser_retryresponses_create",
+      "tests_test_parser_retryresponses_parse",
+      "tests_test_parser_test_parser_falls_back_to_grounded_markdown",
+      "tests_test_parser_test_parser_keeps_failed_page_in_document",
+      "types"
+    ],
+    "1": [
+      "any",
+      "base64",
+      "collections_abc",
+      "openai",
+      "os",
+      "runtimeerror",
+      "src_ade_app_config_parserconfig",
+      "src_ade_app_models_pageresult",
+      "src_ade_app_models_usage",
+      "src_ade_app_models_usage_plus",
+      "src_ade_app_parser",
+      "src_ade_app_parser_base_url",
+      "src_ade_app_parser_build_client",
+      "src_ade_app_parser_expanded_box",
+      "src_ade_app_parser_image",
+      "src_ade_app_parser_parse_document",
+      "src_ade_app_parser_parse_page",
+      "src_ade_app_parser_parse_structured",
+      "src_ade_app_parser_rationale_1",
+      "src_ade_app_parser_read_crop",
+      "src_ade_app_parser_read_page_markdown",
+      "src_ade_app_parser_render_markdown",
+      "src_ade_app_parser_structuredreaderror",
+      "src_ade_app_parser_structuredreaderror_init",
+      "src_ade_app_parser_usage",
+      "typing",
+      "urllib_parse"
+    ],
+    "2": [
+      "html",
+      "io",
+      "json",
+      "markdown_it",
+      "nh3",
+      "src_ade_app_artifacts",
+      "src_ade_app_artifacts_annotate",
+      "src_ade_app_artifacts_artifacts",
+      "src_ade_app_artifacts_build_artifacts",
+      "src_ade_app_artifacts_build_html",
+      "src_ade_app_artifacts_estimated_cost",
+      "src_ade_app_artifacts_rationale_1",
+      "src_ade_app_artifacts_safe_stem",
+      "src_ade_app_models_documentresult",
+      "src_ade_app_raster_renderedpage",
+      "streamlit_app_parsedoutput",
+      "streamlit_app_result",
+      "tests_test_artifacts",
+      "tests_test_artifacts_test_cost_is_unavailable_when_usage_is_incomplete",
+      "tests_test_artifacts_test_exports_derive_from_one_result_and_sanitize_html",
+      "zipfile"
+    ],
+    "3": [
+      "dataclasses",
+      "image",
+      "math",
+      "pymupdf",
+      "src_ade_app_inputs",
+      "src_ade_app_inputs_documentinput",
+      "src_ade_app_inputs_documentinput_post_init",
+      "src_ade_app_inputs_documentinput_stem",
+      "src_ade_app_inputs_documentinput_suffix",
+      "src_ade_app_inputs_rationale_1",
+      "src_ade_app_inputs_rationale_21",
+      "src_ade_app_raster",
+      "src_ade_app_raster_crop_page",
+      "src_ade_app_raster_encode",
+      "src_ade_app_raster_open_image",
+      "src_ade_app_raster_png",
+      "src_ade_app_raster_rationale_1",
+      "src_ade_app_raster_render_pages",
+      "tests_test_raster",
+      "tests_test_raster_test_image_render_and_crop"
+    ],
+    "4": [
+      "exception",
+      "hashlib",
+      "ipaddress",
+      "re",
+      "src_ade_app_security",
+      "src_ade_app_security_is_loopback_address",
+      "src_ade_app_security_public_extraction_error",
+      "src_ade_app_security_rationale_1",
+      "src_ade_app_security_rationale_15",
+      "src_ade_app_security_rationale_29",
+      "streamlit",
+      "streamlit_app",
+      "streamlit_app_preview",
+      "streamlit_app_rationale_1",
+      "streamlit_app_rationale_60",
+      "streamlit_app_safe_rendered_markdown",
+      "streamlit_app_secret",
+      "streamlit_app_update",
+      "tests_test_security",
+      "tests_test_security_test_security_boundary"
+    ],
+    "5": [
+      "parametrize",
+      "pathlib",
+      "src_ade_app_prompts",
+      "src_ade_app_prompts_load_prompt",
+      "src_ade_app_prompts_page_request_prompt",
+      "src_ade_app_prompts_rationale_1",
+      "src_ade_app_prompts_rationale_11",
+      "src_ade_app_prompts_rationale_21",
+      "src_ade_app_prompts_rationale_29",
+      "src_ade_app_prompts_render_prompt",
+      "tests_test_parser_test_parser_uses_only_sol_and_bounded_adaptive_read",
+      "tests_test_prompts",
+      "tests_test_prompts_test_all_runtime_prompts_are_markdown_files",
+      "tests_test_prompts_test_crop_template_requires_all_values",
+      "tests_test_prompts_test_page_request_variants_match_attached_image_count",
+      "tests_test_prompts_test_prompt_loader_rejects_paths"
+    ],
+    "6": [
+      "argparse",
+      "path",
+      "src_ade_app_cli",
+      "src_ade_app_cli_exit_code",
+      "src_ade_app_cli_main",
+      "src_ade_app_cli_rationale_1",
+      "src_ade_app_cli_write_outputs",
+      "src_ade_app_inputs_parse_page_range",
+      "src_ade_app_inputs_rationale_55",
+      "src_ade_app_parser_resolve_api_key",
+      "src_ade_app_raster_page_count",
+      "tests_test_cli",
+      "tests_test_cli_document",
+      "tests_test_cli_test_cli_exit_code_reports_page_outcomes",
+      "tests_test_cli_test_cli_preflights_all_output_conflicts"
+    ],
+    "7": [
+      "fixture",
+      "pil",
+      "pytest",
+      "tests_conftest",
+      "tests_conftest_png_bytes"
+    ],
+    "8": [
+      "src_ade_app_init",
+      "src_ade_app_init_rationale_1"
+    ],
+    "9": [
+      "pkg_ade_app"
+    ],
+    "10": [
+      "scripts_launch"
+    ]
+  },
+  "cohesion": {
+    "0": 0.12473118279569892,
+    "1": 0.17663817663817663,
+    "2": 0.18571428571428572,
+    "3": 0.1736842105263158,
+    "4": 0.11052631578947368,
+    "5": 0.18333333333333332,
+    "6": 0.20952380952380953,
+    "7": 0.4,
+    "8": 1.0,
+    "9": 1.0,
+    "10": 1.0
+  },
+  "gods": [
+    {
+      "id": "src_ade_app_inputs_documentinput",
+      "label": "DocumentInput",
+      "degree": 18
+    },
+    {
+      "id": "src_ade_app_parser_parse_document",
+      "label": "parse_document()",
+      "degree": 17
+    },
+    {
+      "id": "src_ade_app_parser_parse_page",
+      "label": "_parse_page()",
+      "degree": 17
+    },
+    {
+      "id": "src_ade_app_parser_read_crop",
+      "label": "_read_crop()",
+      "degree": 15
+    },
+    {
+      "id": "src_ade_app_models_documentresult",
+      "label": "DocumentResult",
+      "degree": 14
+    },
+    {
+      "id": "src_ade_app_parser_read_page_markdown",
+      "label": "_read_page_markdown()",
+      "degree": 14
+    },
+    {
+      "id": "src_ade_app_models_box",
+      "label": "Box",
+      "degree": 13
+    },
+    {
+      "id": "src_ade_app_raster_renderedpage",
+      "label": "RenderedPage",
+      "degree": 13
+    },
+    {
+      "id": "src_ade_app_models_strictmodel",
+      "label": "StrictModel",
+      "degree": 12
+    },
+    {
+      "id": "src_ade_app_models_pageread",
+      "label": "PageRead",
+      "degree": 11
+    }
+  ],
+  "surprises": [
+    {
+      "source": "_preview()",
+      "target": "DocumentInput",
+      "source_files": [
+        "streamlit_app.py",
+        "src/ade_app/inputs.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "uses",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities; peripheral node `_preview()` unexpectedly reaches hub `DocumentInput`"
+    },
+    {
+      "source": "test_exports_derive_from_one_result_and_sanitize_html()",
+      "target": "Block",
+      "source_files": [
+        "tests/test_artifacts.py",
+        "src/ade_app/models.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "uses",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "test_exports_derive_from_one_result_and_sanitize_html()",
+      "target": "Box",
+      "source_files": [
+        "tests/test_artifacts.py",
+        "src/ade_app/models.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "uses",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "test_box_requires_ordered_normalized_coordinates()",
+      "target": "Box",
+      "source_files": [
+        "tests/test_models.py",
+        "src/ade_app/models.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "uses",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; peripheral node `test_box_requires_ordered_normalized_coordinates()` unexpectedly reaches hub `Box`"
+    },
+    {
+      "source": "test_image_render_and_crop()",
+      "target": "Box",
+      "source_files": [
+        "tests/test_raster.py",
+        "src/ade_app/models.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "uses",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities"
+    }
+  ],
+  "questions": [
+    {
+      "type": "bridge_node",
+      "question": "Why does `DocumentInput` connect `Community 3` to `Community 0`, `Community 1`, `Community 4`, `Community 5`, `Community 6`?",
+      "why": "High betweenness centrality (0.075) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `Box` connect `Community 0` to `Community 1`, `Community 2`, `Community 3`?",
+      "why": "High betweenness centrality (0.053) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `PageRead` connect `Community 0` to `Community 1`?",
+      "why": "High betweenness centrality (0.045) - this node is a cross-community bridge."
+    },
+    {
+      "type": "verify_inferred",
+      "question": "Are the 9 inferred relationships involving `DocumentInput` (e.g. with `parse_document()` and `_open_image()`) actually correct?",
+      "why": "`DocumentInput` has 9 INFERRED edges - model-reasoned connections that need verification."
+    },
+    {
+      "type": "verify_inferred",
+      "question": "Are the 2 inferred relationships involving `parse_document()` (e.g. with `DocumentInput` and `RenderedPage`) actually correct?",
+      "why": "`parse_document()` has 2 INFERRED edges - model-reasoned connections that need verification."
+    },
+    {
+      "type": "verify_inferred",
+      "question": "Are the 4 inferred relationships involving `_parse_page()` (e.g. with `ParserConfig` and `PageRead`) actually correct?",
+      "why": "`_parse_page()` has 4 INFERRED edges - model-reasoned connections that need verification."
+    },
+    {
+      "type": "verify_inferred",
+      "question": "Are the 4 inferred relationships involving `_read_crop()` (e.g. with `ParserConfig` and `CropRead`) actually correct?",
+      "why": "`_read_crop()` has 4 INFERRED edges - model-reasoned connections that need verification."
+    }
+  ]
+}
