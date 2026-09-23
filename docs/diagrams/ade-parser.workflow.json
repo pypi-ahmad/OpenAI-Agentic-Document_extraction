@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Parse Only Document Workflow",
+    "output": "docs/diagrams/ade-parser.html",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    { "id": "pipeline", "label": "Parse Pipeline" },
+    { "id": "follow_up", "label": "Optional Reads", "variant": "exception" }
+  ],
+  "phases": [
+    { "id": "prepare", "label": "Prepare", "fromCol": 0, "toCol": 1 },
+    { "id": "read", "label": "Read", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "deliver", "label": "Result and exports", "fromCol": 4, "toCol": 5 }
+  ],
+  "mainPath": ["document", "render", "full_read", "result", "exports"],
+  "nodes": [
+    { "id": "document", "lane": "pipeline", "col": 0, "width": 40, "type": "external", "label": "Input" },
+    { "id": "render", "lane": "pipeline", "col": 1, "width": 44, "type": "backend", "label": "Render" },
+    { "id": "full_read", "lane": "pipeline", "col": 2, "width": 40, "type": "external", "label": "Read" },
+    { "id": "optional_reads", "lane": "follow_up", "col": 3, "width": 58, "type": "external", "label": "If Needed" },
+    { "id": "result", "lane": "pipeline", "col": 4, "width": 44, "type": "backend", "label": "Result" },
+    { "id": "exports", "lane": "pipeline", "col": 5, "width": 44, "type": "backend", "label": "Export" }
+  ],
+  "edges": [
+    { "from": "document", "to": "render", "role": "main" },
+    { "from": "render", "to": "full_read", "role": "main" },
+    { "from": "full_read", "to": "result", "role": "main", "route": "straight" },
+    { "from": "full_read", "to": "optional_reads", "role": "branch" },
+    { "from": "optional_reads", "to": "result", "role": "return" },
+    { "from": "result", "to": "exports", "role": "main" }
+  ],
+  "cards": [
+    { "dot": "violet", "title": "Model Boundary", "items": ["GPT-6 Sol handles OCR, layout understanding, and visual interpretation", "PyMuPDF and Pillow render, crop, and annotate pixels"] },
+    { "dot": "amber", "title": "Bounded Reads", "items": ["Up to four crop rereads in two rounds; merge by stable page IDs", "One Markdown recovery if structured output is incomplete; mark the page partial"] },
+    { "dot": "cyan", "title": "Shared Result", "items": ["Markdown, JSON, HTML, annotations, crops, and ZIP derive locally from one result", "Adjacent selected pages may provide continuity context; transcribe only the target page"] }
+  ]
+}
