@@ -21,7 +21,7 @@ model and merge blocks by stable within-page IDs. They are capped at four crops 
 If the structured page response is incomplete, the parser makes one plain-Markdown recovery call,
 marks the page partial, and uses one full-page box instead of inventing fine-grained coordinates.
 
-The response contract contains generic pages and semantic blocks. It has no business fields.
+The response uses generic pages and semantic blocks, with no business-specific fields.
 Normalized boxes supply the coordinates for annotations and visual crops. Every export is derived
 locally from the same result, so moving between UI views cannot create more API calls.
 

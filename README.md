@@ -7,8 +7,8 @@ classify documents or extract fields against a business schema.
 The parser preserves reading order and document elements such as headings, lists, tables, figures,
 captions, footnotes, checkboxes, formulas, handwriting, and marginalia. It can reread up to four
 difficult regions per page over two rounds. It marks unreadable content as `[ILLEGIBLE_TEXT]`.
-If a dense page cannot complete the structured block response, one bounded GPT-6 Sol fallback
-preserves its layout-aware Markdown with a full-page grounding box and a review warning.
+When a dense page returns an incomplete structured block response, one bounded GPT-6 Sol fallback
+returns layout-aware Markdown with a full-page grounding box and a review warning.
 
 ## Run the app
 
